@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcade OS - Gaming Edition</title>
+    <style>
+        /* --- 1. CORE GAMING VARIABLES --- */
+        :root {
+            --glass-bg: rgba(10, 10, 15, 0.7); --glass-border: rgba(0, 255, 255, 0.3);
+            --blur: blur(20px); --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --neon-blue: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14;
+            --sys-bg: #050505; --text-light: #fff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: "Courier New", Courier, monospace; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: var(--text-light); }
+
+        /* --- 2. GAMING HARDWARE FRAME --- */
+        #device {
+            width: 375px; height: 812px; border-radius: 45px; position: relative; overflow: hidden;
+            box-shadow: 0 0 0 12px #111, 0 0 40px rgba(0, 243, 255, 0.4), inset 0 0 20px rgba(255, 0, 255, 0.2);
+            background: #050508;
+            background-image: linear-gradient(0deg, transparent 24%, rgba(0, 243, 255, 0.05) 25%, rgba(0, 243, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 243, 255, 0.05) 75%, rgba(0, 243, 255, 0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 243, 255, 0.05) 25%, rgba(0, 243, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 243, 255, 0.05) 75%, rgba(0, 243, 255, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+        }
+        @media (max-width: 400px) { #device { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; } }
+
+        /* Notch & Status Bar */
+        .notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 120px; height: 30px; background: #000; border-radius: 20px; z-index: 1000; box-shadow: 0 0 10px var(--neon-blue); display:flex; justify-content:center; align-items:center; font-size:12px; font-weight:bold; color:var(--neon-pink);}
+        .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 48px; display: flex; justify-content: space-between; align-items: center; padding: 0 35px; color: var(--neon-blue); font-size: 14px; font-weight: bold; z-index: 998; text-shadow: 0 0 5px var(--neon-blue); }
+
+        /* --- 3. SCREENS --- */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.5s ease, transform 0.5s var(--spring); }
+        .hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
+
+        /* Lock Screen */
+        #lock-screen { z-index: 50; align-items: center; padding-top: 150px; background: rgba(0,0,0,0.8); backdrop-filter: var(--blur); }
+        .glitch-time { font-size: 80px; color: #fff; text-shadow: 2px 2px var(--neon-pink), -2px -2px var(--neon-blue); margin-bottom: 20px; font-weight:bold; }
+        .start-btn { margin-top: auto; margin-bottom: 100px; padding: 20px 40px; font-size: 20px; font-weight: bold; color: #000; background: var(--neon-green); border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 0 20px var(--neon-green); animation: pulse 1.5s infinite; text-transform: uppercase;}
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* Home Screen */
+        #home-screen { z-index: 10; padding: 100px 20px; }
+        .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .game-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .game-card:active { transform: scale(0.95); border-color: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); }
+        .game-icon { font-size: 50px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .game-title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: var(--neon-blue); letter-spacing: 1px; text-align:center;}
+        .game-subtitle { font-size: 10px; color: gray; margin-top: 5px; }
+
+        /* --- 4. APP VIEWS --- */
+        #app-container { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+        .app-view { position: absolute; inset: 0; background: var(--sys-bg); transform: translateY(100%); opacity: 0; transition: all 0.4s var(--spring); pointer-events: auto; display: flex; flex-direction: column; }
+        .app-view.active { transform: translateY(0); opacity: 1; }
+        
+        .app-header { padding: 60px 20px 20px; background: rgba(10,10,15,0.9); border-bottom: 2px solid var(--neon-blue); display: flex; justify-content: center; align-items: center; position: relative; font-weight: bold; font-size: 18px; color: var(--neon-blue); text-transform: uppercase; text-shadow: 0 0 5px var(--neon-blue); z-index: 30;}
+        .back-btn { position: absolute; left: 15px; bottom: 15px; background: none; border: none; color: var(--neon-pink); font-size: 16px; cursor: pointer; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 5px var(--neon-pink);}
+        .app-content { flex: 1; overflow: hidden; position: relative; display:flex; flex-direction:column; align-items:center;}
+
+        /* --- 5. GAME SPECIFIC CSS --- */
+        
+        /* Tic-Tac-Toe */
+        .ttt-board { display: grid; grid-template-columns: repeat(3, 90px); gap: 10px; margin-top: 50px; }
+        .ttt-cell { width: 90px; height: 90px; background: rgba(255,255,255,0.05); border: 2px solid var(--neon-blue); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white;}
+        .ttt-cell:active { background: rgba(0, 243, 255, 0.2); transform: scale(0.9); }
+        .btn-restart { margin-top: 40px; padding: 15px 30px; background: transparent; border: 2px solid var(--neon-pink); color: var(--neon-pink); font-weight: bold; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 0 10px var(--neon-pink); text-transform:uppercase;}
+
+        /* Connect 4 */
+        .c4-board { display: grid; grid-template-columns: repeat(7, 40px); gap: 5px; background: rgba(0, 243, 255, 0.1); padding: 10px; border-radius: 15px; border: 2px solid var(--neon-blue); margin-top: 30px; }
+        .c4-cell { width: 40px; height: 40px; background: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px solid #333; transition: background 0.3s; }
+        .c4-red { background: var(--neon-pink); box-shadow: inset 0 0 10px #fff, 0 0 10px var(--neon-pink); border-color:var(--neon-pink); }
+        .c4-yellow { background: var(--neon-green); box-shadow: inset 0 0 10px #fff, 0 0 10px var(--neon-green); border-color:var(--neon-green); }
+
+        /* Pong */
+        #pong-canvas { background: #000; border: 2px solid var(--neon-blue); box-shadow: 0 0 20px rgba(0,243,255,0.3); border-radius: 10px; margin-top: 30px; }
+        
+        /* RPS */
+        .rps-btn { font-size: 40px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border: 2px solid var(--neon-green); border-radius: 50%; cursor: pointer; transition: 0.2s; display:flex; justify-content:center; align-items:center;}
+        .rps-btn:active { transform: scale(0.8); background: var(--neon-green); }
+        .score-board { display:flex; gap: 40px; margin-top: 30px; font-size: 24px; font-weight:bold; color:var(--neon-blue);}
+    </style>
+</head>
+<body>
+
+    <div id="device">
+        <div class="notch">AI ARCADE</div>
+        
+        <div class="status-bar">
+            <span id="status-time">10:00</span>
+            <span>🔋 100%</span>
+        </div>
+
+        <div id="lock-screen" class="screen">
+            <div style="font-size:24px; color:var(--neon-blue); margin-bottom:10px; text-transform:uppercase;">Theshu's Console</div>
+            <div class="glitch-time" id="clock">10:00</div>
+            <button class="start-btn" onclick="unlockDevice()">Insert Coin</button>
+        </div>
+
+        <div id="home-screen" class="screen hidden">
+            <div class="app-grid">
+                <div class="game-card" onclick="openGame('ttt-app')">
+                    <div class="game-icon">❌⭕</div>
+                    <div class="game-title">Tic-Tac-Toe</div>
+                    <div class="game-subtitle">vs AI Logic</div>
+                </div>
+                <div class="game-card" onclick="openGame('pong-app')">
+                    <div class="game-icon">🏓</div>
+                    <div class="game-title">Neon Pong</div>
+                    <div class="game-subtitle">vs Canvas AI</div>
+                </div>
+                <div class="game-card" onclick="openGame('c4-app')">
+                    <div class="game-icon">🔴🟢</div>
+                    <div class="game-title">Connect 4</div>
+                    <div class="game-subtitle">vs Grid AI</div>
+                </div>
+                <div class="game-card" onclick="openGame('rps-app')">
+                    <div class="game-icon">✊✋✌️</div>
+                    <div class="game-title">Ro-Sham-Bo</div>
+                    <div class="game-subtitle">vs Random AI</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="app-container">
+            
+            <div class="app-view" id="ttt-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Tic-Tac-Toe AI</div>
+                <div class="app-content">
+                    <h2 id="ttt-status" style="margin-top:30px; color:var(--neon-green);">Your Turn (X)</h2>
+                    <div class="ttt-board" id="ttt-board"></div>
+                    <button class="btn-restart" onclick="initTTT()">Reset Board</button>
+                </div>
+            </div>
+
+            <div class="app-view" id="pong-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Neon Pong AI</div>
+                <div class="app-content">
+                    <div style="width: 100%; display:flex; justify-content:space-around; margin-top:20px; font-size:20px; font-weight:bold; color:var(--neon-pink);">
+                        <span>YOU: <span id="pong-p1">0</span></span>
+                        <span>AI: <span id="pong-p2">0</span></span>
+                    </div>
+                    <canvas id="pong-canvas" width="300" height="400"></canvas>
+                    <p style="margin-top:20px; color:gray; font-size:12px; text-align:center;">Touch/Drag left side to move your paddle.<br>AI controls the right side.</p>
+                </div>
+            </div>
+
+            <div class="app-view" id="c4-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Connect 4 AI</div>
+                <div class="app-content">
+                    <h2 id="c4-status" style="margin-top:20px; color:var(--neon-pink);">Drop a Pink Chip</h2>
+                    <div class="c4-board" id="c4-board"></div>
+                    <button class="btn-restart" onclick="initC4()">Reset Grid</button>
+                </div>
+            </div>
+
+            <div class="app-view" id="rps-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Ro-Sham-Bo AI</div>
+                <div class="app-content">
+                    <div class="score-board">
+                        <div style="text-align:center;">YOU<br><span id="rps-score-p" style="color:var(--text-light);">0</span></div>
+                        <div style="text-align:center; color:var(--neon-pink);">AI<br><span id="rps-score-ai" style="color:var(--text-light);">0</span></div>
+                    </div>
+                    
+                    <div id="rps-arena" style="font-size:80px; margin: 40px 0; display:flex; gap:20px; align-items:center;">
+                        <span id="rps-player-show">❓</span> <span style="font-size:30px; color:gray;">VS</span> <span id="rps-ai-show">❓</span>
+                    </div>
+                    
+                    <h3 id="rps-result" style="color:var(--neon-green); margin-bottom:30px; height:20px;">Make your move</h3>
+                    
+                    <div style="display:flex; gap:20px;">
+                        <div class="rps-btn" onclick="playRPS('rock')">✊</div>
+                        <div class="rps-btn" onclick="playRPS('paper')">✋</div>
+                        <div class="rps-btn" onclick="playRPS('scissors')">✌️</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* =========================================
+           ARCADE OS - CORE LOGIC & AI ENGINES
+           ========================================= */
+
+        /* --- SYSTEM --- */
+        window.onload = () => {
+            startClock();
+            initTTT();
+            initC4();
+        };
+
+        function startClock() {
+            const update = () => {
+                const d = new Date(); let h = d.getHours(); let m = d.getMinutes(); 
+                let timeStr = `${h<10?'0'+h:h}:${m<10?'0'+m:m}`;
+                document.getElementById('clock').innerText = timeStr;
+                document.getElementById('status-time').innerText = timeStr;
+            }; update(); setInterval(update, 1000);
+        }
+
+        function unlockDevice() {
+            document.getElementById('lock-screen').style.transform = "scale(1.2)";
+            document.getElementById('lock-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+        }
+
+        function openGame(appId) {
+            document.getElementById(appId).classList.add('active');
+            if(appId === 'pong-app') startPong();
+        }
+
+        function closeApp() {
+            const activeApp = document.querySelector('.app-view.active');
+            if (activeApp) activeApp.classList.remove('active');
+            stopPong(); // Kill canvas loop if running
+        }
+
+        /* --- GAME 1: TIC-TAC-TOE vs AI --- */
+        let tBoard = [], tActive = true;
+        function initTTT() {
+            tBoard = ['','','','','','','','','']; tActive = true;
+            document.getElementById('ttt-status').innerText = "Your Turn (X)";
+            document.getElementById('ttt-status').style.color = "var(--neon-green)";
+            const grid = document.getElementById('ttt-board'); grid.innerHTML = '';
+            for(let i=0; i<9; i++) { 
+                const cell = document.createElement('div'); cell.className = 'ttt-cell'; 
+                cell.onclick = () => playerMoveTTT(i, cell); 
+                grid.appendChild(cell); 
+            }
+        }
+        function playerMoveTTT(idx, cell) {
+            if(!tActive || tBoard[idx] !== '') return;
+            tBoard[idx] = 'X'; cell.innerText = 'X'; cell.style.color = "var(--neon-blue)"; cell.style.textShadow = "0 0 10px var(--neon-blue)";
+            if(checkWinTTT('X')) { endGameTTT("You Win! 🎉", "var(--neon-blue)"); return; }
+            if(!tBoard.includes('')) { endGameTTT("Draw!", "gray"); return; }
+            
+            tActive = false; document.getElementById('ttt-status').innerText = "AI is thinking...";
+            setTimeout(aiMoveTTT, 600); // Simulate AI thinking time
+        }
+        function aiMoveTTT() {
+            let empty = tBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+            if(empty.length === 0) return;
+            // Simple AI: Pick random available spot
+            let move = empty[Math.floor(Math.random() * empty.length)];
+            tBoard[move] = 'O'; 
+            const cell = document.getElementById('ttt-board').children[move];
+            cell.innerText = 'O'; cell.style.color = "var(--neon-pink)"; cell.style.textShadow = "0 0 10px var(--neon-pink)";
+            
+            if(checkWinTTT('O')) { endGameTTT("AI Wins! 💀", "var(--neon-pink)"); return; }
+            if(!tBoard.includes('')) { endGameTTT("Draw!", "gray"); return; }
+            
+            tActive = true; document.getElementById('ttt-status').innerText = "Your Turn (X)";
+        }
+        function checkWinTTT(player) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(p => tBoard[p[0]] === player && tBoard[p[1]] === player && tBoard[p[2]] === player);
+        }
+        function endGameTTT(msg, color) {
+            tActive = false;
+            document.getElementById('ttt-status').innerText = msg;
+            document.getElementById('ttt-status').style.color = color;
+        }
+
+        /* --- GAME 2: NEON PONG vs AI --- */
+        let pCanvas, pCtx, pongLoop;
+        let ball = { x: 150, y: 200, vx: 4, vy: 4, rad: 6 };
+        let pad1 = { x: 10, y: 150, w: 8, h: 60 }; // Player (Left)
+        let pad2 = { x: 282, y: 150, w: 8, h: 60 }; // AI (Right)
+        let score1 = 0, score2 = 0;
+
+        function startPong() {
+            pCanvas = document.getElementById('pong-canvas'); pCtx = pCanvas.getContext('2d');
+            score1 = 0; score2 = 0; resetBall(); updatePongScore();
+            
+            // Touch/Mouse Controls for Player Paddle
+            const movePad = (e) => {
+                const rect = pCanvas.getBoundingClientRect();
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                pad1.y = Math.max(0, Math.min(pCanvas.height - pad1.h, y - pad1.h/2));
+            };
+            pCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); movePad(e);}, {passive:false});
+            pCanvas.addEventListener('mousemove', movePad);
+            
+            pongLoop = requestAnimationFrame(updatePong);
+        }
+        function stopPong() { cancelAnimationFrame(pongLoop); }
+        function resetBall() { ball.x = 150; ball.y = 200; ball.vx = (Math.random()>0.5?4:-4); ball.vy = (Math.random()>0.5?4:-4); }
+        function updatePongScore() { document.getElementById('pong-p1').innerText = score1; document.getElementById('pong-p2').innerText = score2; }
+        
+        function updatePong() {
+            // Move Ball
+            ball.x += ball.vx; ball.y += ball.vy;
+            
+            // Wall Collision (Top/Bottom)
+            if(ball.y - ball.rad < 0 || ball.y + ball.rad > pCanvas.height) ball.vy *= -1;
+            
+            // AI Movement (Tracks ball Y with slight delay)
+            let aiCenter = pad2.y + pad2.h/2;
+            if(aiCenter < ball.y - 10) pad2.y += 3.5; // AI Speed
+            else if(aiCenter > ball.y + 10) pad2.y -= 3.5;
+            pad2.y = Math.max(0, Math.min(pCanvas.height - pad2.h, pad2.y)); // Clamp
+
+            // Paddle Collision
+            let hitPaddle = (p) => {
+                if(ball.y > p.y && ball.y < p.y + p.h) {
+                    ball.vx *= -1.1; // Speed up on hit
+                    let intersectY = ball.y - (p.y + p.h/2);
+                    ball.vy = intersectY * 0.2;
+                }
+            };
+            // Left Paddle (Player)
+            if(ball.x - ball.rad < pad1.x + pad1.w && ball.vx < 0) hitPaddle(pad1);
+            // Right Paddle (AI)
+            if(ball.x + ball.rad > pad2.x && ball.vx > 0) hitPaddle(pad2);
+
+            // Scoring
+            if(ball.x < 0) { score2++; resetBall(); updatePongScore(); }
+            if(ball.x > pCanvas.width) { score1++; resetBall(); updatePongScore(); }
+
+            // Draw Background
+            pCtx.fillStyle = "rgba(0,0,0,0.4)"; pCtx.fillRect(0,0,pCanvas.width,pCanvas.height);
+            // Draw Paddles & Ball (Neon style)
+            pCtx.fillStyle = "#00f3ff"; pCtx.shadowBlur = 10; pCtx.shadowColor = "#00f3ff";
+            pCtx.fillRect(pad1.x, pad1.y, pad1.w, pad1.h); // P1
+            pCtx.fillStyle = "#ff00ff"; pCtx.shadowColor = "#ff00ff";
+            pCtx.fillRect(pad2.x, pad2.y, pad2.w, pad2.h); // AI
+            pCtx.fillStyle = "#fff"; pCtx.shadowColor = "#fff";
+            pCtx.beginPath(); pCtx.arc(ball.x, ball.y, ball.rad, 0, Math.PI*2); pCtx.fill(); pCtx.shadowBlur = 0; // Ball
+
+            pongLoop = requestAnimationFrame(updatePong);
+        }
+
+        /* --- GAME 3: CONNECT 4 vs AI --- */
+        const c4Cols = 7, c4Rows = 6;
+        let c4Board = [], c4Active = true;
+        
+        function initC4() {
+            c4Board = Array(c4Rows).fill().map(() => Array(c4Cols).fill(0));
+            c4Active = true; document.getElementById('c4-status').innerText = "Drop a Pink Chip"; document.getElementById('c4-status').style.color = "var(--neon-pink)";
+            const grid = document.getElementById('c4-board'); grid.innerHTML = '';
+            for(let r=0; r<c4Rows; r++) {
+                for(let c=0; c<c4Cols; c++) {
+                    const cell = document.createElement('div'); cell.className = 'c4-cell';
+                    cell.onclick = () => playerDropC4(c);
+                    cell.id = `c4-${r}-${c}`;
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        function playerDropC4(col) {
+            if(!c4Active) return;
+            let r = getLowestEmptyC4(col);
+            if(r === -1) return; // Column full
+            
+            c4Board[r][col] = 1; // 1 is Player
+            document.getElementById(`c4-${r}-${col}`).classList.add('c4-red');
+            
+            if(checkWinC4(1)) { document.getElementById('c4-status').innerText = "You Win! 🎉"; c4Active = false; return; }
+            
+            c4Active = false; document.getElementById('c4-status').innerText = "AI is thinking..."; document.getElementById('c4-status').style.color = "var(--neon-green)";
+            setTimeout(aiDropC4, 600);
+        }
+        function aiDropC4() {
+            let validCols = [];
+            for(let c=0; c<c4Cols; c++) if(getLowestEmptyC4(c) !== -1) validCols.push(c);
+            if(validCols.length === 0) { document.getElementById('c4-status').innerText = "Board Full. Draw!"; return; }
+            
+            // AI picks random valid column
+            let col = validCols[Math.floor(Math.random() * validCols.length)];
+            let r = getLowestEmptyC4(col);
+            c4Board[r][col] = 2; // 2 is AI
+            document.getElementById(`c4-${r}-${col}`).classList.add('c4-yellow');
+            
+            if(checkWinC4(2)) { document.getElementById('c4-status').innerText = "AI Wins! 💀"; c4Active = false; return; }
+            
+            c4Active = true; document.getElementById('c4-status').innerText = "Drop a Pink Chip"; document.getElementById('c4-status').style.color = "var(--neon-pink)";
+        }
+        function getLowestEmptyC4(col) {
+            for(let r = c4Rows-1; r >= 0; r--) if(c4Board[r][col] === 0) return r;
+            return -1;
+        }
+        function checkWinC4(p) {
+            // Check horizontal, vertical, diagonal
+            for(let r=0; r<c4Rows; r++) {
+                for(let c=0; c<c4Cols; c++) {
+                    if(c4Board[r][c] !== p) continue;
+                    if(c + 3 < c4Cols && c4Board[r][c+1]==p && c4Board[r][c+2]==p && c4Board[r][c+3]==p) return true;
+                    if(r + 3 < c4Rows) {
+                        if(c4Board[r+1][c]==p && c4Board[r+2][c]==p && c4Board[r+3][c]==p) return true;
+                        if(c + 3 < c4Cols && c4Board[r+1][c+1]==p && c4Board[r+2][c+2]==p && c4Board[r+3][c+3]==p) return true;
+                        if(c - 3 >= 0 && c4Board[r+1][c-1]==p && c4Board[r+2][c-2]==p && c4Board[r+3][c-3]==p) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /* --- GAME 4: ROCK PAPER SCISSORS vs AI --- */
+        let rScoreP = 0, rScoreAI = 0;
+        const rEmojis = { 'rock':'✊', 'paper':'✋', 'scissors':'✌️' };
+        function playRPS(pChoice) {
+            const choices = ['rock', 'paper', 'scissors'];
+            let aiChoice = choices[Math.floor(Math.random() * 3)];
+            
+            document.getElementById('rps-player-show').innerText = rEmojis[pChoice];
+            document.getElementById('rps-ai-show').innerText = rEmojis[aiChoice];
+            
+            let res = document.getElementById('rps-result');
+            if(pChoice === aiChoice) { res.innerText = "Draw!"; res.style.color = "gray"; }
+            else if((pChoice==='rock' && aiChoice==='scissors') || (pChoice==='paper' && aiChoice==='rock') || (pChoice==='scissors' && aiChoice==='paper')) {
+                res.innerText = "You Win this round!"; res.style.color = "var(--neon-blue)"; rScoreP++;
+            } else {
+                res.innerText = "AI Wins this round!"; res.style.color = "var(--neon-pink)"; rScoreAI++;
+            }
+            document.getElementById('rps-score-p').innerText = rScoreP;
+            document.getElementById('rps-score-ai').innerText = rScoreAI;
+        }
+    </script>
+</body>
+</html>
