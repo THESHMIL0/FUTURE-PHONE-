@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Web OS 7.0 - The Multitasking Update</title>
+    <style>
+        /* --- 1. CORE SYSTEM VARIABLES --- */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.25); --glass-border: rgba(255, 255, 255, 0.4);
+            --blur: blur(25px); --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --sys-accent: #007aff; /* Dynamic Accent Color */
+            --sys-bg: #f2f2f7; --text-dark: #111; --sys-gray: #e5e5ea;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #050505; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: var(--text-dark); perspective: 1000px; }
+
+        /* --- 2. HARDWARE FRAME --- */
+        #device {
+            width: 375px; height: 812px; border-radius: 45px; position: relative; overflow: hidden;
+            box-shadow: 0 0 0 12px #111, 0 30px 60px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.2);
+            transition: background 0.5s ease, transform 0.1s;
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop') center/cover;
+            transform-style: preserve-3d;
+        }
+        @media (max-width: 400px) { #device { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; transform: none !important; } }
+
+        /* Dynamic Island */
+        .notch { 
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%); 
+            width: 120px; height: 32px; background: #000; border-radius: 20px; z-index: 1000; 
+            transition: all 0.4s var(--spring); display:flex; align-items:center; justify-content:center; color:white; font-size:13px; font-weight:600; overflow:hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .notch.expanded { width: 340px; height: 85px; top: 12px; border-radius: 40px; justify-content: flex-start; padding: 0 25px; }
+        .notch-content { opacity: 0; transition: 0.2s; white-space: nowrap; display:flex; align-items:center; gap: 15px; }
+        .notch.expanded .notch-content { opacity: 1; transition-delay: 0.15s; }
+        
+        /* Island Audio Visualizer */
+        .island-vis { display:none; gap:3px; align-items:flex-end; height:15px; margin-left:10px; }
+        .island-vis.active { display:flex; }
+        .island-bar { width:3px; background:var(--sys-accent); border-radius:2px; animation: eq 0.5s infinite alternate ease-in-out; }
+        
+        #brightness-overlay { position: absolute; inset: 0; background: black; opacity: 0; z-index: 990; pointer-events: none; }
+        
+        /* Status Bar */
+        .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 48px; display: flex; justify-content: space-between; align-items: center; padding: 0 35px; color: white; font-size: 14px; font-weight: 600; z-index: 998; text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events:none; }
+        .status-left { pointer-events:auto; cursor:pointer; } /* Click for Notification Center */
+        .status-right { display:flex; gap: 6px; pointer-events:auto; cursor: pointer; }
+
+        /* Notification Center */
+        #notif-center {
+            position: absolute; top: 0; left: 0; right: 0; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(40px); z-index: 995;
+            transform: translateY(-100%); transition: transform 0.5s var(--spring);
+            padding: 80px 20px 20px; color: white; display:flex; flex-direction:column; gap:10px;
+        }
+        #notif-center.open { transform: translateY(0); }
+        .nc-card { background: rgba(255,255,255,0.15); padding:15px; border-radius:20px; font-size:14px; display:flex; gap:15px; align-items:center; }
+
+        /* --- 3. SYSTEM OVERLAYS --- */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.5s ease, transform 0.5s var(--spring); will-change: transform, opacity; }
+        .hidden { opacity: 0; pointer-events: none; transform: scale(1.08); }
+
+        #lock-screen { z-index: 50; align-items: center; padding-top: 90px; backdrop-filter: var(--blur); background: rgba(0,0,0,0.25); }
+        .time-large { font-size: 85px; color: white; font-weight: 200; letter-spacing: -2px; margin-bottom: -10px; }
+        .date { font-size: 20px; color: white; margin-bottom: 25px; font-weight: 500; }
+        
+        /* Lock Screen Widgets */
+        .ls-widgets { display:flex; gap:15px; margin-bottom: 20px; opacity:0.9; }
+        .ls-widget { background:rgba(255,255,255,0.2); padding:10px 15px; border-radius:15px; display:flex; align-items:center; gap:8px; font-size:14px; color:white; font-weight:600; }
+
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: auto; margin-bottom: 60px; }
+        .pin-btn { width: 75px; height: 75px; border-radius: 50%; background: rgba(255,255,255,0.15); color: white; font-size: 30px; font-weight: 300; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: var(--blur); cursor: pointer; transition: transform 0.1s; }
+        .pin-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.4); }
+
+        #control-center {
+            position: absolute; top: 0; left: 0; right: 0; height: 65%;
+            background: rgba(0,0,0,0.65); backdrop-filter: var(--blur);
+            z-index: 100; border-bottom-left-radius: 45px; border-bottom-right-radius: 45px;
+            transform: translateY(-100%); transition: transform 0.4s var(--spring);
+            padding: 70px 25px 20px; color: white; display: flex; flex-direction: column; gap: 15px;
+        }
+        #control-center.open { transform: translateY(0); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .cc-row { display: flex; gap: 15px; }
+        .cc-btn { flex: 1; aspect-ratio: 1; background: rgba(255,255,255,0.2); border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 28px; cursor: pointer; transition: 0.2s; }
+        .cc-btn.active { background: var(--sys-accent); color: white; }
+        .slider-container { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 15px; font-size: 20px; }
+        input[type=range] { flex: 1; accent-color: white; height: 6px; }
+
+        /* --- 4. HOME SCREEN & APP GRID --- */
+        #home-screen { z-index: 10; padding: 80px 22px; overflow-y: auto; scrollbar-width: none; }
+        #home-screen::-webkit-scrollbar { display: none; }
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px 18px; padding-bottom: 40px; }
+        .app-icon-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.15s; }
+        .app-icon-wrapper:active { transform: scale(0.8); filter: brightness(0.7); }
+        .app-icon { width: 62px; height: 62px; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 32px; margin-bottom: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); position: relative; }
+        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-weight: 500; letter-spacing: 0.3px; }
+        
+        /* 26 App Gradients */
+        .bg-settings { background: linear-gradient(135deg, #8e9eab, #eef2f3); } .bg-notes { background: linear-gradient(135deg, #fdfbfb, #ebedee); }
+        .bg-camera { background: #1c1c1e; } .bg-photos { background: conic-gradient(from 90deg, #FF3B30, #FF9500, #FFCC00, #4CD964, #5AC8FA, #007AFF, #5856D6, #FF2D55); }
+        .bg-calendar { background: white; color: black; flex-direction: column; font-weight: bold; } .bg-terminal { background: #000; color: #00ff00; font-family: monospace; }
+        .bg-calc { background: linear-gradient(135deg, #f6d365, #fda085); } .bg-clock { background: #000; color: #ff9500; border: 2px solid #ff9500;}
+        .bg-weather { background: linear-gradient(135deg, #89f7fe, #66a6ff); } .bg-browser { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .bg-game { background: linear-gradient(135deg, #ff9a9e, #fecfef); } .bg-music { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .bg-health { background: white; color: #ff2d55; } .bg-files { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+        .bg-contacts { background: linear-gradient(135deg, #cfd9df, #e2ebf0); } .bg-assistant { background: linear-gradient(135deg, #12c2e9, #c471ed, #f64f59); color: white; }
+        .bg-paint { background: conic-gradient(#ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); } .bg-maps { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+        .bg-vault { background: #2c3e50; color: #f1c40f; } .bg-alarms { background: linear-gradient(135deg, #ff9966, #ff5e62); color: white; }
+        /* NEW APPS */
+        .bg-recorder { background: linear-gradient(135deg, #ff0844, #ffb199); color: white; }
+        .bg-stocks { background: linear-gradient(135deg, #232526, #414345); color: #00ff00; }
+        .bg-video { background: linear-gradient(135deg, #4b6cb7, #182848); color: white; }
+        .bg-qr { background: #111; border: 2px solid #0f0; color: #0f0; }
+        .bg-compass { background: radial-gradient(circle, #333, #000); color: white; border: 2px solid #aaa; border-radius: 50%; }
+        .bg-typing { background: linear-gradient(135deg, #fceabb, #f8b500); color: black; }
+
+        /* --- 5. WINDOW MANAGER & MULTITASKING --- */
+        #app-container { position: absolute; inset: 0; z-index: 20; pointer-events: none; transition: transform 0.4s var(--spring); }
+        .app-view {
+            position: absolute; inset: 0; background: var(--sys-bg);
+            transform: scale(0.9) translateY(100px); opacity: 0; transition: all 0.35s var(--spring);
+            pointer-events: auto; display: flex; flex-direction: column; display: none;
+        }
+        .app-view.active { transform: scale(1) translateY(0); opacity: 1; display: flex; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        
+        /* Multitasking Mode */
+        #app-container.multitasking { transform: scale(0.7) translateY(-50px); pointer-events:auto; }
+        #app-container.multitasking .app-view.active { border-radius: 40px; overflow: hidden; cursor: pointer; }
+        #app-container.multitasking::after { content: 'Swipe up indicator to kill app'; position: absolute; bottom: -80px; width: 100%; text-align: center; color: white; font-weight: bold; font-size: 20px; }
+
+        .app-header { padding: 55px 20px 15px; background: var(--glass-bg); backdrop-filter: var(--blur); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; position: relative; font-weight: 600; font-size: 17px; z-index: 10; color: var(--text-dark);}
+        .back-btn { position: absolute; left: 15px; bottom: 12px; background: none; border: none; color: var(--sys-accent); font-size: 17px; cursor: pointer; padding: 5px; font-weight: 500; }
+        .app-content { flex: 1; overflow-y: auto; padding: 20px; position: relative; }
+        
+        .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 140px; height: 5px; background: #000; border-radius: 10px; z-index: 30; cursor: pointer; opacity: 0; transition: 0.3s; }
+        .app-view.active ~ .home-indicator { opacity: 1; pointer-events: auto; }
+
+        .btn { width: 100%; padding: 18px; border-radius: 14px; border: none; background: var(--sys-accent); color: white; font-size: 16px; font-weight: 600; margin-bottom: 12px; cursor: pointer; transition:0.1s; }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        .card { background: white; padding: 18px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap: 5px;}
+        .card-row { display:flex; justify-content:space-between; align-items:center; }
+
+        /* --- 6. DARK MODE --- */
+        body.dark-mode { --glass-bg: rgba(0,0,0,0.65); --glass-border: rgba(255,255,255,0.1); --sys-bg: #000; --text-dark: #fff; --sys-gray: #1c1c1e; }
+        body.dark-mode .app-view { background: var(--sys-bg); color: white; }
+        body.dark-mode .card { background: var(--sys-gray); color: white; }
+        body.dark-mode .app-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
+        body.dark-mode .home-indicator { background: white; }
+        body.dark-mode input, body.dark-mode textarea { color: white; }
+
+        /* --- 7. SPECIFIC APP CSS --- */
+        #calc-display { font-size: 60px; color: white; text-align: right; padding: 10px 20px 0; background: #000; margin: 0; word-break: break-all; line-height: 1; }
+        #calc-history { font-size: 20px; color: gray; text-align: right; padding: 20px 20px 0; background: #000; min-height:40px; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 15px; background: #000; height: 100%; align-content: end; }
+        .calc-btn { aspect-ratio: 1; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; background: #333; color: white; transition: filter 0.1s; }
+        .calc-btn:active { filter: brightness(1.5); } .calc-btn.op { background: #ff9f0a; } .calc-btn.action { background: #a5a5a5; color: black; }
+        
+        .format-bar { display:flex; gap:10px; padding-bottom:10px; border-bottom:1px solid var(--glass-border); margin-bottom:10px; }
+        .fmt-btn { padding:5px 15px; border-radius:8px; border:none; background:var(--sys-gray); color:var(--text-dark); font-weight:bold; cursor:pointer;}
+        
+        .qr-scanner { width: 250px; height: 250px; border: 4px solid #0f0; position: relative; margin: 40px auto; overflow: hidden; }
+        .qr-laser { width: 100%; height: 2px; background: red; position: absolute; box-shadow: 0 0 10px red; animation: scan 2s infinite linear; }
+        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+
+        .compass-dial { width:250px; height:250px; border-radius:50%; border:8px solid var(--text-dark); margin:50px auto; position:relative; display:flex; justify-content:center; align-items:center; font-size:24px; font-weight:bold; transition: transform 0.1s ease-out; background:var(--glass-bg);}
+        .compass-arrow { position:absolute; top:20px; width:0; height:0; border-left:15px solid transparent; border-right:15px solid transparent; border-bottom:40px solid red; }
+
+        @keyframes eq { 0% { height: 3px; } 100% { height: 15px; } }
+    </style>
+</head>
+<body>
+
+    <div id="device">
+        <div class="notch" id="dynamic-island">
+            <div class="notch-content"><span class="notch-icon" id="di-icon">🔔</span><span id="di-text">Alert</span></div>
+            <div class="island-vis" id="di-vis"><div class="island-bar" style="animation-delay:0.1s"></div><div class="island-bar" style="animation-delay:0.2s"></div><div class="island-bar" style="animation-delay:0.3s"></div></div>
+        </div>
+        <div id="brightness-overlay"></div>
+        
+        <div class="status-bar" id="status-bar">
+            <span class="status-left" id="status-time" onclick="toggleNotifCenter()">10:00</span>
+            <span class="status-right" onclick="toggleControlCenter()">
+                <span id="status-plane" style="display:none;">✈️</span>
+                <span id="status-wifi">📶</span>
+                <span id="battery-icon">🔋 100%</span>
+            </span>
+        </div>
+
+        <div id="notif-center">
+            <h2 style="margin-top:20px; margin-bottom:10px;">Notifications</h2>
+            <div id="nc-list">
+                <div class="nc-card"><span>⚙️</span><div><strong>System</strong><br>Welcome to Web OS 7.0!</div></div>
+            </div>
+            <div style="margin-top:auto; height:5px; width:50px; background:white; border-radius:5px; align-self:center; cursor:pointer;" onclick="toggleNotifCenter()"></div>
+        </div>
+
+        <div id="control-center">
+            <div class="cc-row">
+                <div class="cc-btn" id="cc-plane" onclick="toggleCC('plane', 'status-plane', '✈️'); triggerIsland('✈️', 'Airplane Mode');">✈️</div>
+                <div class="cc-btn active" id="cc-wifi" onclick="toggleCC('wifi', 'status-wifi', '📶'); triggerIsland('📶', 'Wi-Fi Toggled');">📶</div>
+                <div class="cc-btn" id="cc-dnd" onclick="this.classList.toggle('active'); triggerIsland('🌙', 'Do Not Disturb');">🌙</div>
+                <div class="cc-btn" id="cc-dark" onclick="toggleDarkMode()">🌓</div>
+            </div>
+            <div class="slider-container">☀️ <input type="range" min="0" max="85" value="0" id="brightness-slider"></div>
+            <div class="slider-container">🔊 <input type="range" min="0" max="100" value="70"></div>
+            <button class="btn" style="background:rgba(255,255,255,0.2); color:white; margin-top:10px;" onclick="toggleCharge()">Toggle Charger</button>
+            <div class="home-indicator" style="opacity:1; pointer-events:auto; position:relative; bottom:0; margin-top:auto;" onclick="toggleControlCenter()"></div>
+        </div>
+
+        <div id="lock-screen" class="screen">
+            <div class="time-large" id="clock">10:00</div>
+            <div class="date" id="date-display">Friday, March 27</div>
+            
+            <div class="ls-widgets">
+                <div class="ls-widget">🌤️ 72°</div>
+                <div class="ls-widget" id="ls-batt">🔋 100%</div>
+            </div>
+
+            <div style="color: white; font-size: 14px; margin-bottom: 15px; margin-top:auto; font-weight:600; letter-spacing:1px;">SWIPE UP OR ENTER PIN: 1234</div>
+            <div class="pin-pad">
+                <div class="pin-btn" onclick="enterPin(1)">1</div><div class="pin-btn" onclick="enterPin(2)">2</div><div class="pin-btn" onclick="enterPin(3)">3</div>
+                <div class="pin-btn" onclick="enterPin(4)">4</div><div class="pin-btn" onclick="enterPin(5)">5</div><div class="pin-btn" onclick="enterPin(6)">6</div>
+                <div class="pin-btn" onclick="enterPin(7)">7</div><div class="pin-btn" onclick="enterPin(8)">8</div><div class="pin-btn" onclick="enterPin(9)">9</div>
+                <div></div><div class="pin-btn" onclick="enterPin(0)">0</div><div></div>
+            </div>
+        </div>
+
+        <div id="home-screen" class="screen hidden">
+            <div class="app-grid">
+                <div class="app-icon-wrapper" onclick="openApp('settings-app')"><div class="app-icon bg-settings">⚙️<div class="notification-badge">1</div></div><div class="app-label">Settings</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('notes-app')"><div class="app-icon bg-notes">📝</div><div class="app-label">Notes</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('camera-app')"><div class="app-icon bg-camera">📷</div><div class="app-label">Camera</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('photos-app')"><div class="app-icon bg-photos">🖼️</div><div class="app-label">Photos</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('calendar-app')"><div class="app-icon bg-calendar"><span style="color:red; font-size:11px; margin-top:4px;" id="icon-month">MAR</span><span style="font-size:26px; line-height:1;" id="icon-date">27</span></div><div class="app-label">Calendar</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('terminal-app')"><div class="app-icon bg-terminal">>_</div><div class="app-label">Terminal</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('calc-app')"><div class="app-icon bg-calc">🧮</div><div class="app-label">Calc</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('clock-app')"><div class="app-icon bg-clock">⏱️</div><div class="app-label">Clock</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('weather-app')"><div class="app-icon bg-weather">🌤️</div><div class="app-label">Weather</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('browser-app')"><div class="app-icon bg-browser">🌍</div><div class="app-label">Browser</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('game-app')"><div class="app-icon bg-game">🎮</div><div class="app-label">Game</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('music-app')"><div class="app-icon bg-music">🎵</div><div class="app-label">Music</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('health-app')"><div class="app-icon bg-health">❤️</div><div class="app-label">Health</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('files-app')"><div class="app-icon bg-files">📁</div><div class="app-label">Files</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('contacts-app')"><div class="app-icon bg-contacts">👤</div><div class="app-label">Contacts</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('assistant-app')"><div class="app-icon bg-assistant">✨</div><div class="app-label">Assistant</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('paint-app')"><div class="app-icon bg-paint">🎨</div><div class="app-label">Paint</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('maps-app')"><div class="app-icon bg-maps">🗺️</div><div class="app-label">Maps</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('vault-app')"><div class="app-icon bg-vault">🔐</div><div class="app-label">Vault</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('alarms-app')"><div class="app-icon bg-alarms">⏰</div><div class="app-label">Alarms</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('recorder-app')"><div class="app-icon bg-recorder">🎙️</div><div class="app-label">Recorder</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('stocks-app')"><div class="app-icon bg-stocks">📈</div><div class="app-label">Stocks</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('video-app')"><div class="app-icon bg-video">▶️</div><div class="app-label">Video</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('qr-app')"><div class="app-icon bg-qr">🔳</div><div class="app-label">Scanner</div></div>
+                
+                <div class="app-icon-wrapper" onclick="openApp('compass-app')"><div class="app-icon bg-compass">🧭</div><div class="app-label">Compass</div></div>
+                <div class="app-icon-wrapper" onclick="openApp('typing-app')"><div class="app-icon bg-typing">⌨️</div><div class="app-label">Typing</div></div>
+            </div>
+        </div>
+
+        <div id="app-container">
+            
+            <div class="app-view" id="settings-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Settings</div>
+                <div class="app-content">
+                    <div class="card" style="flex-direction:row; align-items:center; gap: 15px; cursor:pointer;" onclick="changeAvatar()">
+                        <div id="set-avatar" style="width:60px; height:60px; background:#ccc; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:30px;">👨‍💻</div>
+                        <div><strong style="font-size:20px;">Master Architect</strong><div style="color:gray; font-size:14px;">Tap to change avatar</div></div>
+                    </div>
+                    
+                    <h3 style="margin: 20px 0 10px; font-size:14px; color:gray; text-transform:uppercase;">Accent Color</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <div style="width:40px;height:40px;border-radius:50%;background:#007aff;cursor:pointer;" onclick="changeAccent('#007aff')"></div>
+                        <div style="width:40px;height:40px;border-radius:50%;background:#34c759;cursor:pointer;" onclick="changeAccent('#34c759')"></div>
+                        <div class="notification-badge" style="position:static;width:40px;height:40px;cursor:pointer;" onclick="changeAccent('#ff3b30')"></div>
+                        <div style="width:40px;height:40px;border-radius:50%;background:#af52de;cursor:pointer;" onclick="changeAccent('#af52de')"></div>
+                    </div>
+
+                    <h3 style="margin: 10px 0 10px; font-size:14px; color:gray; text-transform:uppercase;">Wallpapers</h3>
+                    <button class="btn" style="background: #e66465;" onclick="changeWP('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop')">Default Abstract</button>
+                    <button class="btn" style="background: #232526;" onclick="changeWP('https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=1000&auto=format&fit=crop')">Dark Minimal</button>
+                    
+                    <button class="btn" style="background: #ff3b30; margin-top:30px;" onclick="if(confirm('Wipe simulated hard drive?')) { localStorage.clear(); location.reload(); }">⚠️ Factory Reset</button>
+                </div>
+            </div>
+
+            <div class="app-view" id="notes-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Notes</div>
+                <div class="app-content" style="padding:15px;">
+                    <div class="format-bar">
+                        <button class="fmt-btn" onclick="formatNote('bold')">B</button>
+                        <button class="fmt-btn" style="font-style:italic;" onclick="formatNote('italic')">I</button>
+                        <button class="fmt-btn" style="text-decoration:underline;" onclick="formatNote('underline')">U</button>
+                    </div>
+                    <div id="notes-input" contenteditable="true" style="width:100%; min-height:80%; outline:none; font-size:18px; line-height:1.5;">Start typing...</div>
+                </div>
+            </div>
+
+            <div class="app-view" id="camera-app">
+                <div class="app-header" style="background:#000; color:white; border:none;"><button class="back-btn" style="color:var(--sys-accent);" onclick="closeApp()">⟨</button></div>
+                <div class="app-content" style="padding:0; display:flex; flex-direction:column; background:#000;">
+                    <video id="camera-feed" autoplay playsinline style="width:100%; height:75%; object-fit:cover; background:#111; transform: scaleX(-1);"></video>
+                    <canvas id="camera-canvas" style="display:none;"></canvas>
+                    <div style="flex:1; display:flex; justify-content:center; align-items:center;">
+                        <button style="width:75px; height:75px; border-radius:50%; background:white; border:5px solid #ccc; cursor:pointer; transition:0.1s;" onclick="takePhoto()" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-view" id="photos-app">
+                <div class="app-header">
+                    <button class="back-btn" onclick="closeApp()">⟨ Home</button> Photos
+                    <button style="position:absolute; right:15px; background:none; border:none; color:red; font-size:16px; font-weight:600; cursor:pointer;" onclick="clearPhotos()">Clear</button>
+                </div>
+                <div class="app-content"><div id="photo-gallery" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 3px;"></div></div>
+            </div>
+
+            <div class="app-view" id="calc-app" style="background: #000;">
+                <div class="app-header" style="background:#000; border:none;"><button class="back-btn" style="color:#ff9f0a;" onclick="closeApp()">⟨ Home</button></div>
+                <div style="display:flex; flex-direction:column; height:100%;">
+                    <div id="calc-history"></div>
+                    <div id="calc-display">0</div>
+                    <div class="calc-grid">
+                        <button class="calc-btn action" onclick="calcClick('C')">C</button><button class="calc-btn action" onclick="calcClick('+/-')">+/-</button><button class="calc-btn action" onclick="calcClick('%')">%</button><button class="calc-btn op" onclick="calcClick('/')">÷</button>
+                        <button class="calc-btn num" onclick="calcClick('7')">7</button><button class="calc-btn num" onclick="calcClick('8')">8</button><button class="calc-btn num" onclick="calcClick('9')">9</button><button class="calc-btn op" onclick="calcClick('*')">×</button>
+                        <button class="calc-btn num" onclick="calcClick('4')">4</button><button class="calc-btn num" onclick="calcClick('5')">5</button><button class="calc-btn num" onclick="calcClick('6')">6</button><button class="calc-btn op" onclick="calcClick('-')">−</button>
+                        <button class="calc-btn num" onclick="calcClick('1')">1</button><button class="calc-btn num" onclick="calcClick('2')">2</button><button class="calc-btn num" onclick="calcClick('3')">3</button><button class="calc-btn op" onclick="calcClick('+')">+</button>
+                        <button class="calc-btn num" style="grid-column: span 2; border-radius: 40px; text-align:left; padding-left:35px;" onclick="calcClick('0')">0</button><button class="calc-btn num" onclick="calcClick('.')">.</button><button class="calc-btn op" onclick="calcClick('=')">=</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-view" id="browser-app">
+                <div class="app-header" style="gap:10px;">
+                    <button class="back-btn" onclick="closeApp()">⟨</button>
+                    <input type="text" id="url-bar" value="https://en.wikipedia.org/wiki/Main_Page" style="flex:1; margin-left:30px; padding:10px; border-radius:12px; border:none; background:var(--sys-gray); font-size:14px;" onkeypress="if(event.key==='Enter') loadURL()">
+                    <button style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="loadURL()">🔄</button>
+                </div>
+                <div class="app-content" style="padding:0;">
+                    <div id="offline-msg" style="display:none; text-align:center; padding-top:100px; color:gray;"><h2>✈️ Offline</h2><p>Turn off Airplane Mode to browse.</p></div>
+                    <iframe id="browser-frame" src="https://en.wikipedia.org/wiki/Main_Page" style="width:100%; height:100%; border:none;"></iframe>
+                </div>
+            </div>
+
+            <div class="app-view" id="recorder-app" style="background:#111; color:white;">
+                <div class="app-header" style="background:#222; border:none; color:white;"><button class="back-btn" style="color:#ff3b30;" onclick="closeApp()">⟨ Home</button> Recorder</div>
+                <div class="app-content" style="display:flex; flex-direction:column; align-items:center; padding-top:60px;">
+                    <div id="rec-status" style="font-size:24px; margin-bottom:40px; color:gray;">00:00</div>
+                    <button id="rec-btn" style="width:100px; height:100px; border-radius:50%; background:#ff3b30; border:8px solid #333; cursor:pointer;" onclick="toggleRecord()"></button>
+                    <audio id="rec-playback" controls style="margin-top:50px; display:none;"></audio>
+                </div>
+            </div>
+
+            <div class="app-view" id="stocks-app" style="background:#000; color:white;">
+                <div class="app-header" style="background:#111; border:none; color:white;"><button class="back-btn" style="color:#00ff00;" onclick="closeApp()">⟨ Home</button> AAPL</div>
+                <div class="app-content" style="padding:0;">
+                    <h1 style="font-size:50px; margin:20px 20px 5px;">$145.32</h1><p style="color:#00ff00; margin:0 20px 30px;">+2.4% Today</p>
+                    <canvas id="stocks-canvas" style="width:100%; height:300px;"></canvas>
+                </div>
+            </div>
+
+            <div class="app-view" id="video-app" style="background:#000; color:white;">
+                <div class="app-header" style="background:#111; border:none; color:white;"><button class="back-btn" style="color:var(--sys-accent);" onclick="closeApp()">⟨ Home</button> Video</div>
+                <div class="app-content" style="padding:0; display:flex; align-items:center;">
+                    <video controls style="width:100%;" poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop">
+                        <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+
+            <div class="app-view" id="qr-app" style="background:#000; color:white;">
+                <div class="app-header" style="background:#111; border:none; color:white;"><button class="back-btn" style="color:#0f0;" onclick="closeApp()">⟨ Home</button> Scanner</div>
+                <div class="app-content" style="padding:0; overflow:hidden; position:relative;">
+                    <video id="qr-feed" autoplay playsinline style="width:100%; height:100%; object-fit:cover; opacity:0.6;"></video>
+                    <div style="position:absolute; inset:0; display:flex; justify-content:center; align-items:center; flex-direction:column;">
+                        <div class="qr-scanner"><div class="qr-laser"></div></div>
+                        <p style="color:#0f0; font-family:monospace; margin-top:20px;">Align QR Code within frame</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-view" id="compass-app" style="background:#111; color:white;">
+                <div class="app-header" style="background:#222; border:none; color:white;"><button class="back-btn" style="color:white;" onclick="closeApp()">⟨ Home</button> Compass</div>
+                <div class="app-content" style="text-align:center; padding-top:40px;">
+                    <h1 id="compass-deg" style="font-size:60px; font-weight:200;">0° N</h1>
+                    <div class="compass-dial" id="compass-dial">
+                        <div class="compass-arrow"></div>
+                        <span style="position:absolute; top:10px;">N</span><span style="position:absolute; bottom:10px;">S</span>
+                        <span style="position:absolute; left:15px;">W</span><span style="position:absolute; right:15px;">E</span>
+                    </div>
+                    <p style="color:gray; margin-top:30px;">Move mouse left/right to rotate</p>
+                </div>
+            </div>
+
+            <div class="app-view" id="typing-app" style="background:#fceabb; color:black;">
+                <div class="app-header" style="background:transparent; border:none; color:black;"><button class="back-btn" style="color:black;" onclick="closeApp()">⟨ Home</button> Typing Test</div>
+                <div class="app-content" style="text-align:center; padding-top:40px;">
+                    <h2 id="type-wpm" style="font-size:40px; margin-bottom:20px;">0 WPM</h2>
+                    <p id="type-prompt" style="font-size:20px; color:#555; background:white; padding:20px; border-radius:15px; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">The quick brown fox jumps over the lazy dog.</p>
+                    <input type="text" id="type-input" placeholder="Type here..." style="width:100%; padding:15px; font-size:18px; border-radius:10px; border:2px solid #ccc; outline:none;" oninput="checkTyping()">
+                    <button class="btn" style="background:black; margin-top:30px; width:150px;" onclick="resetTyping()">Reset</button>
+                </div>
+            </div>
+
+            <div class="app-view" id="calendar-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Calendar</div><div class="app-content"><div class="cal-grid" id="cal-days-grid"></div></div></div>
+            <div class="app-view" id="terminal-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Root</div><div class="app-content"><div id="term-output" style="color:#0f0; font-family:monospace; white-space:pre-wrap;">Web OS v7.0 Ready.</div></div></div>
+            <div class="app-view" id="clock-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Stopwatch</div><div class="app-content" style="text-align:center; padding-top:80px;"><div id="stopwatch-display" style="font-size:60px; font-variant-numeric:tabular-nums;">00:00.00</div></div></div>
+            <div class="app-view" id="weather-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Weather</div><div class="app-content" style="text-align:center; padding-top:50px;"><h1 style="font-size:40px;">New York</h1><div style="font-size:90px;">72°</div></div></div>
+            <div class="app-view" id="game-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Tic-Tac-Toe</div><div class="app-content"><h2 id="ttt-status" style="text-align:center; margin-bottom:20px;">Player X</h2><div id="ttt-board" style="display:grid; grid-template-columns:repeat(3,90px); gap:8px; justify-content:center;"></div></div></div>
+            
+            <div class="app-view" id="music-app" style="background:#111; color:white;">
+                <div class="app-header" style="background:#222; border:none; color:white;"><button class="back-btn" style="color:var(--sys-accent);" onclick="closeApp()">⟨ Home</button> Music</div>
+                <div class="app-content" style="display:flex; flex-direction:column; align-items:center; padding-top:40px;">
+                    <div style="width:240px; height:240px; background:linear-gradient(45deg, var(--sys-accent), #f5576c); border-radius:25px;"></div>
+                    <button id="play-btn" style="width:70px; height:70px; border-radius:50%; background:white; color:black; font-size:30px; margin-top:50px; border:none; cursor:pointer;" onclick="toggleMusic()">▶</button>
+                </div>
+            </div>
+            
+            <div class="app-view" id="health-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Health</div><div class="app-content" style="text-align:center; padding-top:40px;"><h1 style="font-size:60px;">4,208</h1><p>Steps Today</p></div></div>
+            <div class="app-view" id="files-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Files</div><div class="app-content"><p>Simulated Storage Directory</p></div></div>
+            <div class="app-view" id="contacts-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Contacts</div><div class="app-content"><p>Directory Data</p></div></div>
+            <div class="app-view" id="assistant-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Assistant</div><div class="app-content"><p style="text-align:center; margin-top:50px;">"Voice systems active."</p></div></div>
+            
+            <div class="app-view" id="paint-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Paint <button style="position:absolute; right:15px; background:none; border:none; color:var(--sys-accent); font-weight:bold; cursor:pointer;" onclick="clearPaint()">Clear</button></div>
+                <div class="app-content" style="padding:10px; text-align:center;"><canvas id="paint-canvas" style="background:white; border-radius:15px; box-shadow:inset 0 0 10px rgba(0,0,0,0.1); touch-action:none;"></canvas></div>
+            </div>
+            
+            <div class="app-view" id="maps-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Maps</div><div class="app-content" style="padding:0;"><iframe width="100%" height="100%" frameborder="0" src="https://www.openstreetmap.org/export/embed.html?bbox=-122.5296%2C37.7019%2C-122.3556%2C37.8107&amp;layer=mapnik" style="border:none;"></iframe></div></div>
+            <div class="app-view" id="vault-app" style="background:#2c3e50; color:white;"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Vault</div><div class="app-content" style="text-align:center; padding-top:100px;"><h1>🔐</h1><p>Vault is locked.</p></div></div>
+            <div class="app-view" id="alarms-app"><div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Home</button> Alarms</div><div class="app-content"><p>Alarms array loaded.</p></div></div>
+
+            <div class="home-indicator" id="home-bar" ondblclick="toggleMultitasking()" onclick="closeApp()"></div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================
+           WEB OS 7.0 - ULTIMATE LOGIC ARCHITECTURE
+           ========================================= */
+
+        /* --- STATE --- */
+        let pinEntry = ""; let isMusicPlaying = false; let battery = 100; let isAirplane = false;
+        
+        // Audio Engine
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, dur, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+        function playBoot() { playTone(261.63, 'sine', 2, 0.2); playTone(329.63, 'sine', 2, 0.2); playTone(392.00, 'sine', 2, 0.2); } // C-Major Chord
+        function playDTMF(num) { const freqs = [1336,1209,1336,1477,1209,1336,1477,1209,1336,1477]; playTone(freqs[num], 'sine', 0.15); playTone(num<4?697:num<7?770:852, 'sine', 0.15); }
+
+        /* --- INIT --- */
+        window.onload = () => {
+            // Apply Settings
+            const root = document.documentElement;
+            if (localStorage.getItem('os_accent')) root.style.setProperty('--sys-accent', localStorage.getItem('os_accent'));
+            if (localStorage.getItem('os_wallpaper')) document.getElementById('device').style.backgroundImage = `url('${localStorage.getItem('os_wallpaper')}')`;
+            if (localStorage.getItem('os_dark_mode') === 'true') { document.body.classList.add('dark-mode'); document.getElementById('cc-dark').classList.add('active'); }
+            if (localStorage.getItem('os_avatar')) document.getElementById('set-avatar').innerText = localStorage.getItem('os_avatar');
+            if (localStorage.getItem('os_notes')) document.getElementById('notes-input').innerHTML = localStorage.getItem('os_notes');
+            
+            startSystemClocks(); initTTT(); initPaint(); drawStocks(); initCompass(); simulateBattery();
+            
+            // Brightness Bind
+            document.getElementById('brightness-slider').addEventListener('input', (e) => { document.getElementById('brightness-overlay').style.opacity = e.target.value / 100; });
+            document.getElementById('notes-input').addEventListener('input', (e) => localStorage.setItem('os_notes', e.target.innerHTML));
+            
+            // Laptop Parallax
+            document.addEventListener('mousemove', (e) => {
+                if(window.innerWidth > 600) { const xAxis = (window.innerWidth/2 - e.pageX)/40; const yAxis = (window.innerHeight/2 - e.pageY)/40; document.getElementById('device').style.transform = `rotateY(${-xAxis}deg) rotateX(${yAxis}deg)`; }
+            });
+            
+            playBoot(); // Play startup chime
+        };
+
+        /* --- CORE SYSTEM --- */
+        function enterPin(num) {
+            pinEntry += num; playDTMF(num);
+            if (pinEntry.length === 4) {
+                if (pinEntry === "1234") {
+                    document.getElementById('lock-screen').style.transform = "scale(1.15)";
+                    document.getElementById('lock-screen').classList.add('hidden');
+                    document.getElementById('home-screen').classList.remove('hidden');
+                } else { triggerIsland('❌', 'Wrong PIN'); }
+                pinEntry = "";
+            }
+        }
+
+        function startSystemClocks() {
+            const update = () => {
+                const d = new Date(); let h = d.getHours(); let m = d.getMinutes(); let timeStr = `${h}:${m<10?'0'+m:m}`;
+                document.getElementById('clock').innerText = timeStr; document.getElementById('status-time').innerText = timeStr;
+            }; update(); setInterval(update, 1000);
+        }
+
+        function simulateBattery() {
+            setInterval(() => {
+                if(battery > 1 && !document.getElementById('battery-icon').innerText.includes('⚡')) {
+                    battery--; document.getElementById('battery-icon').innerText = `🔋 ${battery}%`;
+                    document.getElementById('ls-batt').innerText = `🔋 ${battery}%`;
+                    if(battery === 20) { triggerIsland('⚠️', 'Battery Low (20%)'); playTone(400, 'square', 0.5); }
+                }
+            }, 60000);
+        }
+
+        /* --- WINDOW MANAGER & MULTITASKING --- */
+        let inMultitasking = false;
+        function openApp(appId) {
+            playTone(800, 'sine', 0.05); document.getElementById(appId).classList.add('active');
+            if(appId === 'qr-app') startQR();
+        }
+        function closeApp() {
+            if(inMultitasking) {
+                // If in multitasking, clicking the app closes it (kills it)
+                const activeApp = document.querySelector('.app-view.active');
+                if (activeApp) activeApp.classList.remove('active');
+                toggleMultitasking();
+            } else {
+                const activeApp = document.querySelector('.app-view.active');
+                if (activeApp) activeApp.classList.remove('active');
+            }
+            if(stream) stopCamera();
+        }
+        function toggleMultitasking() {
+            const container = document.getElementById('app-container');
+            if(document.querySelector('.app-view.active')) {
+                inMultitasking = !inMultitasking;
+                if(inMultitasking) container.classList.add('multitasking');
+                else container.classList.remove('multitasking');
+            }
+        }
+
+        function triggerIsland(icon, text) {
+            const di = document.getElementById('dynamic-island');
+            document.getElementById('di-icon').innerText = icon; document.getElementById('di-text').innerText = text;
+            di.classList.add('expanded'); setTimeout(() => di.classList.remove('expanded'), 3000);
+        }
+        
+        function toggleNotifCenter() { document.getElementById('notif-center').classList.toggle('open'); }
+        function toggleControlCenter() { document.getElementById('control-center').classList.toggle('open'); }
+        function toggleCC(id, statusId, icon) { 
+            const btn = document.getElementById(`cc-${id}`); btn.classList.toggle('active'); 
+            document.getElementById(statusId).style.display = btn.classList.contains('active') ? 'inline' : 'none'; 
+            if(id === 'plane') { isAirplane = btn.classList.contains('active'); loadURL(); }
+        }
+        function toggleCharge() {
+            const bat = document.getElementById('battery-icon'); const isC = bat.innerText.includes('⚡');
+            bat.innerText = isC ? `🔋 ${battery}%` : '⚡ Charging';
+            document.getElementById('ls-batt').innerText = bat.innerText;
+            if(!isC) {
+                const ls = document.getElementById('lock-screen'); ls.style.boxShadow = "inset 0 0 100px rgba(52, 199, 89, 0.5)";
+                setTimeout(() => ls.style.boxShadow = "none", 1000);
+            }
+        }
+
+        /* --- SETTINGS APP --- */
+        function toggleDarkMode() { document.body.classList.toggle('dark-mode'); localStorage.setItem('os_dark_mode', document.body.classList.contains('dark-mode')); }
+        function changeWP(url) { document.getElementById('device').style.backgroundImage = `url('${url}')`; localStorage.setItem('os_wallpaper', url); }
+        function changeAccent(color) { document.documentElement.style.setProperty('--sys-accent', color); localStorage.setItem('os_accent', color); }
+        function changeAvatar() { let emo = prompt("Enter an emoji for your profile:"); if(emo) { document.getElementById('set-avatar').innerText = emo; localStorage.setItem('os_avatar', emo); } }
+
+        /* --- NOTES APP --- */
+        function formatNote(command) { document.execCommand(command, false, null); document.getElementById('notes-input').focus(); }
+
+        /* --- BROWSER APP --- */
+        function loadURL() {
+            const frame = document.getElementById('browser-frame'); const msg = document.getElementById('offline-msg');
+            if(isAirplane) { frame.style.display = 'none'; msg.style.display = 'block'; }
+            else { frame.style.display = 'block'; msg.style.display = 'none'; frame.src = document.getElementById('url-bar').value; }
+        }
+
+        /* --- CALCULATOR APP --- */
+        let calcVal = '0', calcEq = '';
+        function calcClick(val) {
+            playTone(1000, 'sine', 0.02); const disp = document.getElementById('calc-display'); const hist = document.getElementById('calc-history');
+            if (val === 'C') { calcVal = '0'; calcEq = ''; hist.innerText = ''; } 
+            else if (val === '=') { try { hist.innerText = calcEq + calcVal + " ="; calcVal = String(eval(calcEq + calcVal)); calcEq = ''; } catch(e) { calcVal = 'Error'; } }
+            else if (['+','-','*','/'].includes(val)) { calcEq += calcVal + val; calcVal = '0'; }
+            else { calcVal = calcVal === '0' && val !== '.' ? val : calcVal + val; }
+            let out = calcVal; if (out.length > 10) out = parseFloat(out).toPrecision(10).replace(/\.?0+$/,""); disp.innerText = out;
+        }
+
+        /* --- MUSIC APP --- */
+        function toggleMusic() {
+            const btn = document.getElementById('play-btn'); const vis = document.getElementById('di-vis');
+            isMusicPlaying = !isMusicPlaying;
+            if(isMusicPlaying) { btn.innerText = "⏸"; vis.classList.add('active'); triggerIsland('🎵', 'Playing Music'); } 
+            else { btn.innerText = "▶"; vis.classList.remove('active'); }
+        }
+
+        /* --- RECORDER APP (NEW) --- */
+        let mediaRec, audioChunks = [];
+        async function toggleRecord() {
+            const btn = document.getElementById('rec-btn'); const audio = document.getElementById('rec-playback');
+            if(mediaRec && mediaRec.state === "recording") {
+                mediaRec.stop(); btn.style.borderRadius = "50%"; btn.style.background = "#ff3b30";
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRec = new MediaRecorder(stream); audioChunks = [];
+                    mediaRec.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRec.onstop = () => { const blob = new Blob(audioChunks, { type: 'audio/webm' }); audio.src = URL.createObjectURL(blob); audio.style.display = 'block'; };
+                    mediaRec.start(); btn.style.borderRadius = "10px"; btn.style.background = "darkred";
+                } catch(e) { alert("Microphone access denied."); }
+            }
+        }
+
+        /* --- STOCKS APP (NEW) --- */
+        function drawStocks() {
+            const c = document.getElementById('stocks-canvas'); const ctx = c.getContext('2d');
+            c.width = 335; c.height = 300;
+            ctx.beginPath(); ctx.moveTo(0, 150); ctx.strokeStyle = "#00ff00"; ctx.lineWidth = 3;
+            let y = 150;
+            for(let x=0; x<=335; x+=10) { y += (Math.random() - 0.45) * 20; ctx.lineTo(x, y); }
+            ctx.stroke();
+            // Gradient fill
+            ctx.lineTo(335, 300); ctx.lineTo(0, 300);
+            let grad = ctx.createLinearGradient(0,0,0,300); grad.addColorStop(0, "rgba(0,255,0,0.5)"); grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad; ctx.fill();
+        }
+
+        /* --- QR SCANNER (NEW) --- */
+        async function startQR() {
+            try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); document.getElementById('qr-feed').srcObject = stream; } 
+            catch (err) { alert("Camera denied"); }
+        }
+
+        /* --- COMPASS (NEW) --- */
+        function initCompass() {
+            const dial = document.getElementById('compass-dial'); const degTxt = document.getElementById('compass-deg');
+            // Desktop fallback simulation
+            document.getElementById('compass-app').addEventListener('mousemove', (e) => {
+                let rot = Math.floor((e.clientX / window.innerWidth) * 360);
+                dial.style.transform = `rotate(${rot}deg)`;
+                degTxt.innerText = `${rot}°`;
+            });
+        }
+
+        /* --- TYPING TEST (NEW) --- */
+        let typeStart = null;
+        function checkTyping() {
+            if(!typeStart) typeStart = Date.now();
+            const input = document.getElementById('type-input').value;
+            const prompt = "The quick brown fox jumps over the lazy dog.";
+            if(input === prompt) {
+                const timeMin = (Date.now() - typeStart) / 60000;
+                const words = prompt.split(" ").length;
+                document.getElementById('type-wpm').innerText = Math.floor(words / timeMin) + " WPM";
+                triggerIsland('🏆', 'Typing Test Complete');
+            }
+        }
+        function resetTyping() { document.getElementById('type-input').value = ""; document.getElementById('type-wpm').innerText = "0 WPM"; typeStart = null; }
+
+        /* --- PAINT APP (RE-INIT FOR DOM) --- */
+        let pCanvas, pCtx, isDrawing = false;
+        function initPaint() {
+            pCanvas = document.getElementById('paint-canvas'); pCtx = pCanvas.getContext('2d');
+            pCanvas.width = 335; pCanvas.height = 400; pCtx.fillStyle = "white"; pCtx.fillRect(0,0,pCanvas.width,pCanvas.height);
+            const draw = (e) => { if(!isDrawing) return; const rect = pCanvas.getBoundingClientRect(); const x = (e.clientX || e.touches[0].clientX) - rect.left; const y = (e.clientY || e.touches[0].clientY) - rect.top; pCtx.lineWidth = 3; pCtx.strokeStyle = "black"; pCtx.lineTo(x, y); pCtx.stroke(); pCtx.beginPath(); pCtx.moveTo(x, y); };
+            pCanvas.addEventListener('mousedown', () => {isDrawing=true;}); pCanvas.addEventListener('mousemove', draw); pCanvas.addEventListener('mouseup', () => {isDrawing=false; pCtx.beginPath();});
+        }
+        function clearPaint() { pCtx.fillStyle = "white"; pCtx.fillRect(0,0,pCanvas.width,pCanvas.height); }
+
+        /* --- TIC TAC TOE (MOCK) --- */
+        function initTTT() {
+            const grid = document.getElementById('ttt-board'); grid.innerHTML = '';
+            for(let i=0; i<9; i++) { const cell = document.createElement('div'); cell.className = 'ttt-cell'; cell.onclick = function() { this.innerText = 'X'; }; grid.appendChild(cell); }
+        }
+    </script>
+</body>
+</html>
