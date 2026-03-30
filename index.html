@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arcade OS 9.0 - Performance Build</title>
+    <title>Arcade OS 9.5 - Deepmind Update</title>
     <style>
         /* --- 1. CORE GAMING VARIABLES --- */
         :root {
@@ -13,7 +13,7 @@
             --sys-bg: #050505; --text-light: #fff;
         }
         
-        /* OVERCLOCK MODE (Victus Profile) */
+        /* OVERCLOCK MODE */
         body.overclock-mode {
             --sys-primary: #ff3b30; --sys-secondary: #ff9500; --sys-tertiary: #ffcc00;
             --glass-border: rgba(255, 59, 48, 0.4);
@@ -22,7 +22,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: "Courier New", Courier, monospace; -webkit-tap-highlight-color: transparent; }
         body { background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: var(--text-light); transition: 0.3s; perspective: 1000px;}
 
-        /* --- 2. GAMING HARDWARE FRAME --- */
+        /* --- 2. HARDWARE FRAME --- */
         #device {
             width: 375px; height: 812px; border-radius: 45px; position: relative; overflow: hidden;
             box-shadow: 0 0 0 12px #111, 0 0 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.05);
@@ -33,7 +33,6 @@
         }
         @media (max-width: 400px) { #device { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; transform: none !important;} }
 
-        /* Notch & Status Bar */
         .notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 130px; height: 30px; background: #000; border-radius: 20px; z-index: 1000; box-shadow: 0 0 10px var(--sys-primary); display:flex; justify-content:center; align-items:center; font-size:12px; font-weight:bold; color:var(--sys-secondary); transition: 0.3s;}
         .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 48px; display: flex; justify-content: space-between; align-items: center; padding: 0 35px; color: var(--sys-primary); font-size: 14px; font-weight: bold; z-index: 998; text-shadow: 0 0 5px var(--sys-primary); transition: 0.3s;}
 
@@ -41,13 +40,11 @@
         .screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.5s ease, transform 0.5s var(--spring); }
         .hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
 
-        /* Lock Screen */
         #lock-screen { z-index: 50; align-items: center; padding-top: 150px; background: rgba(0,0,0,0.85); backdrop-filter: var(--blur); }
         .glitch-time { font-size: 80px; color: #fff; text-shadow: 3px 3px var(--sys-secondary), -3px -3px var(--sys-primary); margin-bottom: 20px; font-weight:bold; transition: 0.3s;}
         .start-btn { margin-top: auto; margin-bottom: 100px; padding: 20px 40px; font-size: 20px; font-weight: bold; color: #000; background: var(--sys-tertiary); border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 0 25px var(--sys-tertiary); animation: pulse 1.5s infinite; text-transform: uppercase; transition: 0.3s;}
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* Home Screen */
         #home-screen { z-index: 10; padding: 80px 20px 20px; overflow-y: auto; scrollbar-width: none;}
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding-bottom: 40px;}
         .game-card { background: var(--glass-bg); border: 2px solid var(--glass-border); border-radius: 20px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: var(--blur);}
@@ -65,14 +62,27 @@
         .back-btn { position: absolute; left: 15px; bottom: 15px; background: none; border: none; color: var(--sys-secondary); font-size: 16px; cursor: pointer; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 5px var(--sys-secondary); transition: 0.3s;}
         .app-content { flex: 1; overflow: hidden; position: relative; display:flex; flex-direction:column; align-items:center; padding: 20px;}
 
-        /* --- 5. GAME SPECIFIC CSS --- */
+        /* --- 5. UI COMPONENTS --- */
         .btn-game { padding: 15px 30px; background: transparent; border: 2px solid var(--sys-secondary); color: var(--sys-secondary); font-weight: bold; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 0 10px var(--sys-secondary); text-transform:uppercase; transition: 0.3s; width: 100%; margin-top: 15px;}
         .btn-game:active { background: var(--sys-secondary); color: #000; }
-
-        /* Retro Drive */
-        #drive-canvas { background: #111; border: 2px solid var(--sys-primary); border-radius: 10px; box-shadow: 0 0 20px var(--sys-primary); width: 100%; max-width: 320px; height: 400px; }
         
-        /* Rune Caster (Simon Says) */
+        /* Difficulty Cycler UI */
+        .diff-toggle { margin-top: 10px; padding: 5px 15px; background: rgba(255,255,255,0.1); border: 1px solid var(--sys-tertiary); color: var(--sys-tertiary); border-radius: 20px; font-size: 12px; cursor: pointer; text-transform: uppercase; font-weight: bold;}
+        .diff-toggle.diff-easy { border-color: #00f3ff; color: #00f3ff; box-shadow: 0 0 5px #00f3ff;}
+        .diff-toggle.diff-norm { border-color: #39ff14; color: #39ff14; box-shadow: 0 0 5px #39ff14;}
+        .diff-toggle.diff-hard { border-color: #ff00ff; color: #ff00ff; box-shadow: 0 0 5px #ff00ff;}
+
+        /* Game Elements */
+        .ttt-board { display: grid; grid-template-columns: repeat(3, 90px); gap: 10px; margin-top: 20px; }
+        .ttt-cell { width: 90px; height: 90px; background: rgba(255,255,255,0.05); border: 2px solid var(--sys-primary); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white;}
+        .c4-board { display: grid; grid-template-columns: repeat(7, 40px); gap: 5px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 15px; border: 2px solid var(--sys-primary); margin-top: 10px; }
+        .c4-cell { width: 40px; height: 40px; background: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px solid #333; }
+        .c4-red { background: var(--sys-secondary); box-shadow: 0 0 10px var(--sys-secondary); border-color:var(--sys-secondary); }
+        .c4-yellow { background: var(--sys-tertiary); box-shadow: 0 0 10px var(--sys-tertiary); border-color:var(--sys-tertiary); }
+        #pong-canvas { background: #000; border: 2px solid var(--sys-primary); box-shadow: 0 0 20px rgba(0,243,255,0.3); border-radius: 10px; margin-top: 10px; width:100%; max-width:300px; height:350px;}
+
+        /* Drive & Runes */
+        #drive-canvas { background: #111; border: 2px solid var(--sys-primary); border-radius: 10px; box-shadow: 0 0 20px var(--sys-primary); width: 100%; max-width: 320px; height: 400px; }
         .rune-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 300px; margin-top: 30px;}
         .rune-btn { aspect-ratio: 1; border-radius: 20px; border: 4px solid #333; cursor: pointer; display:flex; justify-content:center; align-items:center; font-size: 50px; transition: 0.1s; background: rgba(255,255,255,0.05); filter: brightness(0.5);}
         .rune-btn.active { filter: brightness(1.5); transform: scale(0.95); }
@@ -80,30 +90,17 @@
         #rune-1 { border-color: #34c759; color: #34c759; box-shadow: inset 0 0 20px rgba(52,199,89,0.2); }
         #rune-2 { border-color: #007aff; color: #007aff; box-shadow: inset 0 0 20px rgba(0,122,255,0.2); }
         #rune-3 { border-color: #ffcc00; color: #ffcc00; box-shadow: inset 0 0 20px rgba(255,204,0,0.2); }
-
-        /* Virtual Pet */
+        
         .pet-container { width: 100%; background: rgba(255,255,255,0.05); border: 2px solid var(--sys-tertiary); border-radius: 20px; padding: 20px; text-align: center; margin-top: 20px; box-shadow: 0 0 20px rgba(57,255,20,0.1); }
         .pet-sprite { font-size: 20px; line-height: 1.2; color: var(--sys-tertiary); margin: 20px 0; white-space: pre; text-shadow: 0 0 10px var(--sys-tertiary); font-weight:bold; }
         .stat-bar { width: 100%; height: 15px; border: 1px solid #555; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #111; }
         .stat-fill { height: 100%; background: var(--sys-primary); transition: width 0.3s; }
-
-        /* Tic-Tac-Toe & Connect 4 */
-        .ttt-board { display: grid; grid-template-columns: repeat(3, 90px); gap: 10px; margin-top: 30px; }
-        .ttt-cell { width: 90px; height: 90px; background: rgba(255,255,255,0.05); border: 2px solid var(--sys-primary); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white;}
-        .c4-board { display: grid; grid-template-columns: repeat(7, 40px); gap: 5px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 15px; border: 2px solid var(--sys-primary); margin-top: 20px; }
-        .c4-cell { width: 40px; height: 40px; background: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px solid #333; }
-        .c4-red { background: var(--sys-secondary); box-shadow: 0 0 10px var(--sys-secondary); border-color:var(--sys-secondary); }
-        .c4-yellow { background: var(--sys-tertiary); box-shadow: 0 0 10px var(--sys-tertiary); border-color:var(--sys-tertiary); }
-
-        /* Pong */
-        #pong-canvas { background: #000; border: 2px solid var(--sys-primary); box-shadow: 0 0 20px rgba(0,243,255,0.3); border-radius: 10px; margin-top: 20px; width:100%; max-width:300px; height:350px;}
     </style>
 </head>
 <body>
 
     <div id="device">
-        <div class="notch">ARCADE 9.0</div>
-        
+        <div class="notch">ARCADE 9.5</div>
         <div class="status-bar">
             <span id="status-time">10:00</span>
             <span>🔋 100%</span>
@@ -117,77 +114,31 @@
 
         <div id="home-screen" class="screen hidden">
             <div class="app-grid">
-                <div class="game-card" onclick="openGame('drive-app')">
-                    <div class="game-icon">🏎️</div>
-                    <div class="game-title">Retro Drive</div>
-                    <div class="game-subtitle">Canvas Engine</div>
-                </div>
-                <div class="game-card" onclick="openGame('rune-app')">
-                    <div class="game-icon">✨</div>
-                    <div class="game-title">Rune Caster</div>
-                    <div class="game-subtitle">Spell Sequence</div>
-                </div>
-                <div class="game-card" onclick="openGame('pet-app')">
-                    <div class="game-icon">🐈</div>
-                    <div class="game-title">Companion</div>
-                    <div class="game-subtitle">Virtual Pet</div>
-                </div>
-                <div class="game-card" onclick="openGame('settings-app')">
-                    <div class="game-icon">⚙️</div>
-                    <div class="game-title">Hardware</div>
-                    <div class="game-subtitle">System Settings</div>
-                </div>
+                <div class="game-card" onclick="openGame('drive-app')"><div class="game-icon">🏎️</div><div class="game-title">Retro Drive</div><div class="game-subtitle">Canvas Engine</div></div>
+                <div class="game-card" onclick="openGame('rune-app')"><div class="game-icon">✨</div><div class="game-title">Rune Caster</div><div class="game-subtitle">Spell Sequence</div></div>
+                <div class="game-card" onclick="openGame('pet-app')"><div class="game-icon">🐈</div><div class="game-title">Companion</div><div class="game-subtitle">Virtual Pet</div></div>
+                <div class="game-card" onclick="openGame('settings-app')"><div class="game-icon">⚙️</div><div class="game-title">Hardware</div><div class="game-subtitle">System Settings</div></div>
 
-                <div class="game-card" onclick="openGame('pong-app')">
-                    <div class="game-icon">🏓</div>
-                    <div class="game-title">Neon Pong</div>
-                    <div class="game-subtitle">vs AI</div>
-                </div>
-                <div class="game-card" onclick="openGame('ttt-app')">
-                    <div class="game-icon">❌</div>
-                    <div class="game-title">Tic-Tac-Toe</div>
-                    <div class="game-subtitle">vs AI</div>
-                </div>
-                <div class="game-card" onclick="openGame('c4-app')">
-                    <div class="game-icon">🔴</div>
-                    <div class="game-title">Connect 4</div>
-                    <div class="game-subtitle">vs Grid AI</div>
-                </div>
-                <div class="game-card" onclick="openGame('rps-app')">
-                    <div class="game-icon">✊</div>
-                    <div class="game-title">Ro-Sham-Bo</div>
-                    <div class="game-subtitle">vs Random AI</div>
-                </div>
+                <div class="game-card" onclick="openGame('pong-app')"><div class="game-icon">🏓</div><div class="game-title">Neon Pong</div><div class="game-subtitle">Deepmind AI</div></div>
+                <div class="game-card" onclick="openGame('ttt-app')"><div class="game-icon">❌</div><div class="game-title">Tic-Tac-Toe</div><div class="game-subtitle">Deepmind AI</div></div>
+                <div class="game-card" onclick="openGame('c4-app')"><div class="game-icon">🔴</div><div class="game-title">Connect 4</div><div class="game-subtitle">Deepmind AI</div></div>
+                <div class="game-card" onclick="openGame('rps-app')"><div class="game-icon">✊</div><div class="game-title">Ro-Sham-Bo</div><div class="game-subtitle">Deepmind AI</div></div>
             </div>
         </div>
 
         <div id="app-container">
             
-            <div class="app-view" id="drive-app">
-                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Retro Drive</div>
-                <div class="app-content">
-                    <div style="width:100%; display:flex; justify-content:space-between; color:var(--sys-secondary); font-weight:bold; margin-bottom:10px;">
-                        <span>SCORE: <span id="drive-score">0</span></span>
-                        <span id="drive-status">TAP TO START</span>
+            <div class="app-view" id="settings-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Hardware</div>
+                <div class="app-content" style="align-items:flex-start; width:100%;">
+                    <h3 style="color:var(--sys-primary); margin-bottom:15px;">System Profile</h3>
+                    <div style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:20px; border-radius:15px; width:100%; margin-bottom:20px;">
+                        <strong style="font-size:18px;">HX Turbo Mode</strong>
+                        <p style="color:gray; font-size:12px; margin-top:5px; line-height:1.4;">Overclocks visual logic and shifts UI color palette to aggressive thermals.</p>
+                        <button class="btn-game" id="btn-overclock" style="border-color:#ff3b30; color:#ff3b30; box-shadow:0 0 10px rgba(255,59,48,0.5);" onclick="toggleOverclock()">Enable Overclock</button>
                     </div>
-                    <canvas id="drive-canvas" width="300" height="400"></canvas>
-                    <p style="color:gray; font-size:12px; margin-top:15px; text-align:center;">Tap Left/Right side of screen to steer.<br>Dodge the red blocks.</p>
-                </div>
-            </div>
-
-            <div class="app-view" id="rune-app">
-                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Rune Caster</div>
-                <div class="app-content">
-                    <h2 id="rune-status" style="color:var(--sys-primary); text-align:center;">Level 1</h2>
-                    <p style="color:gray; font-size:14px; margin-top:10px; text-align:center;">Watch the spell sequence, then repeat it.</p>
-                    
-                    <div class="rune-grid">
-                        <div class="rune-btn" id="rune-0" onclick="playerRuneClick(0)">🔥</div>
-                        <div class="rune-btn" id="rune-1" onclick="playerRuneClick(1)">🌿</div>
-                        <div class="rune-btn" id="rune-2" onclick="playerRuneClick(2)">💧</div>
-                        <div class="rune-btn" id="rune-3" onclick="playerRuneClick(3)">⚡</div>
-                    </div>
-                    <button class="btn-game" id="btn-start-rune" onclick="startRuneGame()">Cast Spell</button>
+                    <h3 style="color:var(--sys-primary); margin-bottom:15px;">Data Management</h3>
+                    <button class="btn-game" style="border-color:gray; color:gray; box-shadow:none;" onclick="if(confirm('Wipe scores and pet data?')) localStorage.clear(); location.reload();">Factory Reset</button>
                 </div>
             </div>
 
@@ -196,12 +147,10 @@
                 <div class="app-content">
                     <div class="pet-container">
                         <h2 style="color:var(--sys-primary); text-transform:uppercase;">Kushu</h2>
-                        
                         <div class="pet-sprite" id="pet-sprite">
  /\_/\  
 ( o.o ) 
  > ^ <  </div>
-                        
                         <div style="text-align:left; margin-top:20px;">
                             <span style="font-size:12px; color:gray;">HUNGER</span>
                             <div class="stat-bar"><div class="stat-fill" id="pet-hunger" style="width:100%; background:var(--sys-secondary);"></div></div>
@@ -209,7 +158,6 @@
                             <div class="stat-bar"><div class="stat-fill" id="pet-happy" style="width:100%;"></div></div>
                         </div>
                     </div>
-                    
                     <div style="display:flex; gap:15px; width:100%; margin-top:20px;">
                         <button class="btn-game" style="margin:0;" onclick="feedPet()">🐟 Feed</button>
                         <button class="btn-game" style="margin:0;" onclick="playPet()">🧶 Play</button>
@@ -217,27 +165,36 @@
                 </div>
             </div>
 
-            <div class="app-view" id="settings-app">
-                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Hardware</div>
-                <div class="app-content" style="align-items:flex-start; width:100%;">
-                    <h3 style="color:var(--sys-primary); margin-bottom:15px;">System Profile</h3>
-                    
-                    <div style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:20px; border-radius:15px; width:100%; margin-bottom:20px;">
-                        <strong style="font-size:18px;">HX Turbo Mode</strong>
-                        <p style="color:gray; font-size:12px; margin-top:5px; line-height:1.4;">Unlocks maximum performance logic and shifts UI color palette to aggressive thermals.</p>
-                        
-                        <button class="btn-game" id="btn-overclock" style="border-color:#ff3b30; color:#ff3b30; box-shadow:0 0 10px rgba(255,59,48,0.5);" onclick="toggleOverclock()">Enable Overclock</button>
+            <div class="app-view" id="drive-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Retro Drive</div>
+                <div class="app-content">
+                    <div style="width:100%; display:flex; justify-content:space-between; color:var(--sys-secondary); font-weight:bold; margin-bottom:10px;">
+                        <span>SCORE: <span id="drive-score">0</span></span>
+                        <span id="drive-status">TAP TO START</span>
                     </div>
+                    <canvas id="drive-canvas" width="300" height="400"></canvas>
+                </div>
+            </div>
 
-                    <h3 style="color:var(--sys-primary); margin-bottom:15px;">Data Management</h3>
-                    <button class="btn-game" style="border-color:gray; color:gray; box-shadow:none;" onclick="if(confirm('Wipe scores and pet data?')) localStorage.clear(); location.reload();">Factory Reset</button>
+            <div class="app-view" id="rune-app">
+                <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Rune Caster</div>
+                <div class="app-content">
+                    <h2 id="rune-status" style="color:var(--sys-primary); text-align:center;">Level 1</h2>
+                    <div class="rune-grid">
+                        <div class="rune-btn" id="rune-0" onclick="playerRuneClick(0)">🔥</div><div class="rune-btn" id="rune-1" onclick="playerRuneClick(1)">🌿</div>
+                        <div class="rune-btn" id="rune-2" onclick="playerRuneClick(2)">💧</div><div class="rune-btn" id="rune-3" onclick="playerRuneClick(3)">⚡</div>
+                    </div>
+                    <button class="btn-game" id="btn-start-rune" onclick="startRuneGame()">Cast Spell</button>
                 </div>
             </div>
 
             <div class="app-view" id="ttt-app">
                 <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Tic-Tac-Toe</div>
                 <div class="app-content">
-                    <h2 id="ttt-status" style="margin-top:20px; color:var(--sys-tertiary);">Your Turn (X)</h2>
+                    <div style="display:flex; align-items:center; gap:10px; width:100%; justify-content:center;">
+                        <h2 id="ttt-status" style="color:var(--sys-tertiary); margin:0;">Your Turn</h2>
+                    </div>
+                    <button class="diff-toggle diff-norm" id="btn-diff-ttt" onclick="cycleDiff('ttt')">AI: Normal</button>
                     <div class="ttt-board" id="ttt-board"></div>
                     <button class="btn-game" onclick="initTTT()">Reset Board</button>
                 </div>
@@ -246,18 +203,20 @@
             <div class="app-view" id="pong-app">
                 <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Neon Pong</div>
                 <div class="app-content" style="padding:10px;">
-                    <div style="width: 100%; display:flex; justify-content:space-around; margin-top:10px; font-size:24px; font-weight:bold; color:var(--sys-secondary);">
+                    <div style="width: 100%; display:flex; justify-content:space-around; align-items:center; font-size:24px; font-weight:bold; color:var(--sys-secondary);">
                         <span><span id="pong-p1">0</span></span>
+                        <button class="diff-toggle diff-norm" id="btn-diff-pong" onclick="cycleDiff('pong')">AI: Normal</button>
                         <span><span id="pong-p2">0</span></span>
                     </div>
-                    <canvas id="pong-canvas" width="300" height="400"></canvas>
+                    <canvas id="pong-canvas" width="300" height="350"></canvas>
                 </div>
             </div>
 
             <div class="app-view" id="c4-app">
                 <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Connect 4</div>
                 <div class="app-content">
-                    <h2 id="c4-status" style="margin-top:10px; color:var(--sys-secondary);">Drop a Chip</h2>
+                    <h2 id="c4-status" style="color:var(--sys-secondary); margin:0;">Drop a Chip</h2>
+                    <button class="diff-toggle diff-norm" id="btn-diff-c4" onclick="cycleDiff('c4')">AI: Normal</button>
                     <div class="c4-board" id="c4-board"></div>
                     <button class="btn-game" onclick="initC4()">Reset Grid</button>
                 </div>
@@ -266,14 +225,15 @@
             <div class="app-view" id="rps-app">
                 <div class="app-header"><button class="back-btn" onclick="closeApp()">⟨ Exit</button> Ro-Sham-Bo</div>
                 <div class="app-content">
-                    <div style="display:flex; gap: 40px; margin-top: 20px; font-size: 24px; font-weight:bold; color:var(--sys-primary);">
+                    <button class="diff-toggle diff-norm" id="btn-diff-rps" onclick="cycleDiff('rps')">AI: Normal</button>
+                    <div style="display:flex; gap: 40px; margin-top: 10px; font-size: 24px; font-weight:bold; color:var(--sys-primary);">
                         <div style="text-align:center;">YOU<br><span id="rps-score-p" style="color:var(--text-light);">0</span></div>
                         <div style="text-align:center; color:var(--sys-secondary);">AI<br><span id="rps-score-ai" style="color:var(--text-light);">0</span></div>
                     </div>
-                    <div style="font-size:70px; margin: 40px 0; display:flex; gap:20px; align-items:center;">
+                    <div style="font-size:70px; margin: 30px 0; display:flex; gap:20px; align-items:center;">
                         <span id="rps-player-show" style="filter: drop-shadow(0 0 10px var(--sys-primary));">❓</span> <span style="font-size:20px; color:gray;">VS</span> <span id="rps-ai-show" style="filter: drop-shadow(0 0 10px var(--sys-secondary));">❓</span>
                     </div>
-                    <h3 id="rps-result" style="color:var(--sys-tertiary); margin-bottom:30px; height:20px;">Make your move</h3>
+                    <h3 id="rps-result" style="color:var(--sys-tertiary); margin-bottom:20px; height:20px;">Make your move</h3>
                     <div style="display:flex; gap:15px;">
                         <button class="btn-game" style="font-size:30px; padding:10px;" onclick="playRPS('rock')">✊</button>
                         <button class="btn-game" style="font-size:30px; padding:10px;" onclick="playRPS('paper')">✋</button>
@@ -287,248 +247,247 @@
 
     <script>
         /* =========================================
-           ARCADE OS 9.0 - MASTER LOGIC & CANVAS ENGINES
+           ARCADE OS 9.5 - DEEPMIND AI LOGIC ENGINES
            ========================================= */
 
         /* --- AUDIO ENGINE --- */
         const aCtx = new (window.AudioContext || window.webkitAudioContext)();
         function sfx(type) {
             if(aCtx.state === 'suspended') aCtx.resume();
-            const o = aCtx.createOscillator(); const g = aCtx.createGain();
-            o.connect(g); g.connect(aCtx.destination);
+            const o = aCtx.createOscillator(); const g = aCtx.createGain(); o.connect(g); g.connect(aCtx.destination);
             if(type==='blip') { o.type='square'; o.frequency.setValueAtTime(600, aCtx.currentTime); o.frequency.exponentialRampToValueAtTime(800, aCtx.currentTime+0.1); g.gain.setValueAtTime(0.1, aCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime+0.1); o.start(); o.stop(aCtx.currentTime+0.1); }
             if(type==='crash') { o.type='sawtooth'; o.frequency.setValueAtTime(100, aCtx.currentTime); o.frequency.exponentialRampToValueAtTime(40, aCtx.currentTime+0.3); g.gain.setValueAtTime(0.2, aCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime+0.3); o.start(); o.stop(aCtx.currentTime+0.3); }
             if(type==='score') { o.type='sine'; o.frequency.setValueAtTime(800, aCtx.currentTime); o.frequency.setValueAtTime(1200, aCtx.currentTime+0.1); g.gain.setValueAtTime(0.1, aCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime+0.2); o.start(); o.stop(aCtx.currentTime+0.2); }
         }
 
-        /* --- SYSTEM BOOT --- */
+        /* --- GLOBAL DIFFICULTY STATE --- */
+        // 0 = Easy, 1 = Normal, 2 = Hard
+        let diffs = { 'ttt': 1, 'pong': 1, 'c4': 1, 'rps': 1 };
+        const dLabels = ["AI: Easy", "AI: Normal", "AI: Hard"];
+        const dClasses = ["diff-easy", "diff-norm", "diff-hard"];
+
+        function cycleDiff(game) {
+            diffs[game] = (diffs[game] + 1) % 3;
+            const btn = document.getElementById(`btn-diff-${game}`);
+            btn.innerText = dLabels[diffs[game]];
+            btn.className = `diff-toggle ${dClasses[diffs[game]]}`;
+            sfx('blip');
+            
+            // Re-init games that need an instant reset on diff change
+            if(game === 'ttt') initTTT();
+            if(game === 'c4') initC4();
+        }
+
         window.onload = () => {
             startClock(); initTTT(); initC4();
-            
-            // Check Overclock state
-            if(localStorage.getItem('os_overclock') === 'true') {
-                document.body.classList.add('overclock-mode');
-                document.getElementById('btn-overclock').innerText = "Disable Overclock";
-                document.getElementById('btn-overclock').style.color = "var(--sys-primary)";
-            }
-
-            // Laptop Mouse Parallax Effect
-            document.addEventListener('mousemove', (e) => {
-                if(window.innerWidth > 600) { 
-                    const x = (window.innerWidth/2 - e.pageX)/50; const y = (window.innerHeight/2 - e.pageY)/50; 
-                    document.getElementById('device').style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`; 
-                }
-            });
-
-            // Start background pet loop
-            setInterval(decayPet, 10000); 
-            updatePetUI();
+            if(localStorage.getItem('os_overclock') === 'true') { document.body.classList.add('overclock-mode'); document.getElementById('btn-overclock').innerText = "Disable Overclock"; document.getElementById('btn-overclock').style.color = "var(--sys-primary)"; }
+            document.addEventListener('mousemove', (e) => { if(window.innerWidth > 600) { const x = (window.innerWidth/2 - e.pageX)/50; const y = (window.innerHeight/2 - e.pageY)/50; document.getElementById('device').style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`; } });
+            setInterval(decayPet, 10000); updatePetUI();
         };
 
-        function startClock() {
-            const update = () => {
-                const d = new Date(); let h = d.getHours(); let m = d.getMinutes(); 
-                let timeStr = `${h<10?'0'+h:h}:${m<10?'0'+m:m}`;
-                document.getElementById('clock').innerText = timeStr;
-                document.getElementById('status-time').innerText = timeStr;
-            }; update(); setInterval(update, 1000);
-        }
+        function startClock() { const update = () => { const d = new Date(); let h = d.getHours(); let m = d.getMinutes(); let timeStr = `${h<10?'0'+h:h}:${m<10?'0'+m:m}`; document.getElementById('clock').innerText = timeStr; document.getElementById('status-time').innerText = timeStr; }; update(); setInterval(update, 1000); }
+        function unlockDevice() { sfx('score'); document.getElementById('lock-screen').style.transform = "scale(1.3)"; document.getElementById('lock-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); }
+        function openGame(appId) { sfx('blip'); document.getElementById(appId).classList.add('active'); if(appId === 'pong-app') startPong(); if(appId === 'drive-app') initDrive(); }
+        function closeApp() { sfx('blip'); const activeApp = document.querySelector('.app-view.active'); if (activeApp) activeApp.classList.remove('active'); stopPong(); stopDrive(); }
+        function toggleOverclock() { const isOC = document.body.classList.toggle('overclock-mode'); localStorage.setItem('os_overclock', isOC); const btn = document.getElementById('btn-overclock'); if(isOC) { btn.innerText = "Disable Overclock"; sfx('score');} else { btn.innerText = "Enable Overclock"; sfx('crash');} }
 
-        function unlockDevice() {
-            sfx('score');
-            document.getElementById('lock-screen').style.transform = "scale(1.3)";
-            document.getElementById('lock-screen').classList.add('hidden');
-            document.getElementById('home-screen').classList.remove('hidden');
-        }
-
-        function openGame(appId) {
-            sfx('blip');
-            document.getElementById(appId).classList.add('active');
-            if(appId === 'pong-app') startPong();
-            if(appId === 'drive-app') initDrive();
-        }
-
-        function closeApp() {
-            sfx('blip');
-            const activeApp = document.querySelector('.app-view.active');
-            if (activeApp) activeApp.classList.remove('active');
-            stopPong(); stopDrive();
-        }
-
-        /* --- APP: OVERCLOCK SETTINGS --- */
-        function toggleOverclock() {
-            const isOC = document.body.classList.toggle('overclock-mode');
-            localStorage.setItem('os_overclock', isOC);
-            const btn = document.getElementById('btn-overclock');
-            if(isOC) { btn.innerText = "Disable Overclock"; sfx('score');} 
-            else { btn.innerText = "Enable Overclock"; sfx('crash');}
-        }
-
-        /* --- APP: VIRTUAL PET (Kushu) --- */
-        let petHunger = parseInt(localStorage.getItem('pet_h') || '100');
-        let petHappy = parseInt(localStorage.getItem('pet_f') || '100');
-        
-        function decayPet() {
-            petHunger = Math.max(0, petHunger - 2);
-            petHappy = Math.max(0, petHappy - 1);
-            localStorage.setItem('pet_h', petHunger); localStorage.setItem('pet_f', petHappy);
-            updatePetUI();
-        }
+        /* --- PET & DRIVE & RUNE (UNCHANGED CORE LOGIC) --- */
+        let petHunger = parseInt(localStorage.getItem('pet_h') || '100'); let petHappy = parseInt(localStorage.getItem('pet_f') || '100');
+        function decayPet() { petHunger = Math.max(0, petHunger - 2); petHappy = Math.max(0, petHappy - 1); localStorage.setItem('pet_h', petHunger); localStorage.setItem('pet_f', petHappy); updatePetUI(); }
         function feedPet() { sfx('blip'); petHunger = Math.min(100, petHunger + 20); updatePetUI(); animatePet(" /\\_/\\ \n( ^.^ )\n >   < "); }
         function playPet() { sfx('score'); petHappy = Math.min(100, petHappy + 20); updatePetUI(); animatePet(" /\\_/\\ \n( >.< )\n > ^ < "); }
-        function updatePetUI() {
-            document.getElementById('pet-hunger').style.width = petHunger + "%";
-            document.getElementById('pet-happy').style.width = petHappy + "%";
-            if(petHunger < 30 || petHappy < 30) document.getElementById('pet-sprite').innerText = " /\\_/\\ \n( -.- )\n >   < ";
-        }
-        function animatePet(art) {
-            document.getElementById('pet-sprite').innerText = art;
-            setTimeout(() => { document.getElementById('pet-sprite').innerText = " /\\_/\\ \n( o.o )\n > ^ < "; }, 1000);
-        }
+        function updatePetUI() { document.getElementById('pet-hunger').style.width = petHunger + "%"; document.getElementById('pet-happy').style.width = petHappy + "%"; if(petHunger < 30 || petHappy < 30) document.getElementById('pet-sprite').innerText = " /\\_/\\ \n( -.- )\n >   < "; }
+        function animatePet(art) { document.getElementById('pet-sprite').innerText = art; setTimeout(() => { document.getElementById('pet-sprite').innerText = " /\\_/\\ \n( o.o )\n > ^ < "; }, 1000); }
 
-        /* --- APP: RUNE CASTER --- */
         let runeSeq = [], playerSeq = [], runeLevel = 1, runeActive = false;
-        
-        function startRuneGame() {
-            runeSeq = []; runeLevel = 1; document.getElementById('btn-start-rune').style.display = 'none';
-            document.getElementById('rune-status').innerText = `Level ${runeLevel}`;
-            nextRuneRound();
-        }
-        function nextRuneRound() {
-            playerSeq = []; runeActive = false;
-            runeSeq.push(Math.floor(Math.random() * 4));
-            document.getElementById('rune-status').innerText = `Watch closely...`;
-            
-            let i = 0;
-            let int = setInterval(() => {
-                flashRune(runeSeq[i]); i++;
-                if(i >= runeSeq.length) { clearInterval(int); runeActive = true; document.getElementById('rune-status').innerText = `Your Turn`; }
-            }, 800);
-        }
-        function flashRune(id) {
-            sfx('blip'); const r = document.getElementById(`rune-${id}`);
-            r.classList.add('active'); setTimeout(() => r.classList.remove('active'), 400);
-        }
-        function playerRuneClick(id) {
-            if(!runeActive) return;
-            flashRune(id); playerSeq.push(id);
-            
-            // Check accuracy
-            const currentIdx = playerSeq.length - 1;
-            if(playerSeq[currentIdx] !== runeSeq[currentIdx]) {
-                sfx('crash'); document.getElementById('rune-status').innerText = "Spell Failed!";
-                document.getElementById('btn-start-rune').style.display = 'block'; document.getElementById('btn-start-rune').innerText = "Try Again";
-                runeActive = false; return;
-            }
-            // Check if sequence complete
-            if(playerSeq.length === runeSeq.length) {
-                runeActive = false; runeLevel++; sfx('score');
-                document.getElementById('rune-status').innerText = `Level ${runeLevel} clear!`;
-                setTimeout(nextRuneRound, 1000);
-            }
-        }
+        function startRuneGame() { runeSeq = []; runeLevel = 1; document.getElementById('btn-start-rune').style.display = 'none'; document.getElementById('rune-status').innerText = `Level ${runeLevel}`; nextRuneRound(); }
+        function nextRuneRound() { playerSeq = []; runeActive = false; runeSeq.push(Math.floor(Math.random() * 4)); document.getElementById('rune-status').innerText = `Watch closely...`; let i = 0; let int = setInterval(() => { flashRune(runeSeq[i]); i++; if(i >= runeSeq.length) { clearInterval(int); runeActive = true; document.getElementById('rune-status').innerText = `Your Turn`; } }, 800); }
+        function flashRune(id) { sfx('blip'); const r = document.getElementById(`rune-${id}`); r.classList.add('active'); setTimeout(() => r.classList.remove('active'), 400); }
+        function playerRuneClick(id) { if(!runeActive) return; flashRune(id); playerSeq.push(id); const currentIdx = playerSeq.length - 1; if(playerSeq[currentIdx] !== runeSeq[currentIdx]) { sfx('crash'); document.getElementById('rune-status').innerText = "Spell Failed!"; document.getElementById('btn-start-rune').style.display = 'block'; document.getElementById('btn-start-rune').innerText = "Try Again"; runeActive = false; return; } if(playerSeq.length === runeSeq.length) { runeActive = false; runeLevel++; sfx('score'); document.getElementById('rune-status').innerText = `Level ${runeLevel} clear!`; setTimeout(nextRuneRound, 1000); } }
 
-        /* --- APP: RETRO DRIVE --- */
-        let dCanvas, dCtx, dLoop, carX = 150, dScore = 0, speedMult = 1, dActive = false;
-        let obstacles = [];
-        
-        function initDrive() {
-            dCanvas = document.getElementById('drive-canvas'); dCtx = dCanvas.getContext('2d');
-            dCanvas.addEventListener('mousedown', steerDrive);
-            dCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); steerDrive(e.touches[0]);}, {passive:false});
-            document.getElementById('drive-status').innerText = "TAP CANVAS TO START";
-            carX = 150; dScore = 0; speedMult = 1; obstacles = []; dActive = false;
-            drawDriveFrame();
-        }
-        function steerDrive(e) {
-            const rect = dCanvas.getBoundingClientRect(); const x = e.clientX - rect.left;
-            if(!dActive) { dActive = true; document.getElementById('drive-status').innerText = "DRIVING"; dLoop = requestAnimationFrame(updateDrive); }
-            carX = x < dCanvas.width/2 ? Math.max(30, carX - 60) : Math.min(dCanvas.width-30, carX + 60);
-        }
+        let dCanvas, dCtx, dLoop, carX = 150, dScore = 0, speedMult = 1, dActive = false; let obstacles = [];
+        function initDrive() { dCanvas = document.getElementById('drive-canvas'); dCtx = dCanvas.getContext('2d'); dCanvas.addEventListener('mousedown', steerDrive); dCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); steerDrive(e.touches[0]);}, {passive:false}); document.getElementById('drive-status').innerText = "TAP TO START"; carX = 150; dScore = 0; speedMult = 1; obstacles = []; dActive = false; drawDriveFrame(); }
+        function steerDrive(e) { const rect = dCanvas.getBoundingClientRect(); const x = e.clientX - rect.left; if(!dActive) { dActive = true; document.getElementById('drive-status').innerText = "DRIVING"; dLoop = requestAnimationFrame(updateDrive); } carX = x < dCanvas.width/2 ? Math.max(30, carX - 60) : Math.min(dCanvas.width-30, carX + 60); }
         function stopDrive() { cancelAnimationFrame(dLoop); dActive = false; }
+        function updateDrive() { if(!dActive) return; if(Math.random() < 0.05 * speedMult) { obstacles.push({ x: [30, 90, 150, 210, 270][Math.floor(Math.random()*5)], y: -40, w: 40, h: 40 }); } dScore += Math.floor(speedMult); speedMult += 0.001; document.getElementById('drive-score').innerText = dScore; for(let i=obstacles.length-1; i>=0; i--) { obstacles[i].y += 5 * speedMult; if(obstacles[i].y + obstacles[i].h > 320 && obstacles[i].y < 360 && Math.abs(obstacles[i].x - (carX-20)) < 30) { sfx('crash'); dActive = false; document.getElementById('drive-status').innerText = "CRASHED! TAP RESTART"; document.getElementById('drive-status').style.color = "red"; document.getElementById('drive-canvas').onclick = initDrive; return; } if(obstacles[i].y > 400) obstacles.splice(i, 1); } drawDriveFrame(); dLoop = requestAnimationFrame(updateDrive); }
+        function drawDriveFrame() { dCtx.fillStyle = "#111"; dCtx.fillRect(0,0,300,400); dCtx.strokeStyle = "#333"; dCtx.lineWidth = 2; for(let i=1; i<5; i++) { dCtx.beginPath(); dCtx.moveTo(i*60, 0); dCtx.lineTo(i*60, 400); dCtx.stroke(); } dCtx.fillStyle = "red"; dCtx.shadowBlur = 10; dCtx.shadowColor = "red"; obstacles.forEach(o => dCtx.fillRect(o.x-20, o.y, o.w, o.h)); dCtx.fillStyle = "var(--sys-primary)"; dCtx.shadowColor = "var(--sys-primary)"; dCtx.fillRect(carX - 15, 320, 30, 50); dCtx.shadowBlur = 0; }
+
+        /* =========================================
+           DEEPMIND AI IMPLEMENTATIONS 
+           ========================================= */
+
+        /* --- 1. TIC-TAC-TOE AI --- */
+        let tBoard = [], tActive = true;
+        const winPaths = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
         
-        function updateDrive() {
-            if(!dActive) return;
-            
-            // Spawn obstacles
-            if(Math.random() < 0.05 * speedMult) {
-                obstacles.push({ x: [30, 90, 150, 210, 270][Math.floor(Math.random()*5)], y: -40, w: 40, h: 40 });
-            }
-            
-            // Update logic
-            dScore += Math.floor(speedMult);
-            speedMult += 0.001; // Constantly speed up
-            document.getElementById('drive-score').innerText = dScore;
-            
-            for(let i=obstacles.length-1; i>=0; i--) {
-                obstacles[i].y += 5 * speedMult;
-                // Collision (AABB)
-                if(obstacles[i].y + obstacles[i].h > 320 && obstacles[i].y < 360 && Math.abs(obstacles[i].x - (carX-20)) < 30) {
-                    sfx('crash'); dActive = false; document.getElementById('drive-status').innerText = "CRASHED! TAP RESTART";
-                    document.getElementById('drive-status').style.color = "red";
-                    document.getElementById('drive-canvas').onclick = initDrive;
-                    return;
-                }
-                if(obstacles[i].y > 400) obstacles.splice(i, 1);
-            }
-            drawDriveFrame();
-            dLoop = requestAnimationFrame(updateDrive);
+        function initTTT() {
+            tBoard = ['','','','','','','','','']; tActive = true;
+            document.getElementById('ttt-status').innerText = "Your Turn (X)"; document.getElementById('ttt-status').style.color = "var(--sys-tertiary)";
+            const grid = document.getElementById('ttt-board'); grid.innerHTML = '';
+            for(let i=0; i<9; i++) { const cell = document.createElement('div'); cell.className = 'ttt-cell'; cell.onclick = () => moveTTT(i, cell); grid.appendChild(cell); }
         }
         
-        function drawDriveFrame() {
-            // Background & Road
-            dCtx.fillStyle = "#111"; dCtx.fillRect(0,0,300,400);
-            dCtx.strokeStyle = "#333"; dCtx.lineWidth = 2;
-            for(let i=1; i<5; i++) { dCtx.beginPath(); dCtx.moveTo(i*60, 0); dCtx.lineTo(i*60, 400); dCtx.stroke(); }
-            
-            // Draw Obstacles
-            dCtx.fillStyle = "red"; dCtx.shadowBlur = 10; dCtx.shadowColor = "red";
-            obstacles.forEach(o => dCtx.fillRect(o.x-20, o.y, o.w, o.h));
-            
-            // Draw Car
-            dCtx.fillStyle = "var(--sys-primary)"; dCtx.shadowColor = "var(--sys-primary)";
-            dCtx.fillRect(carX - 15, 320, 30, 50);
-            dCtx.shadowBlur = 0;
+        function moveTTT(idx, cell) {
+            if(!tActive || tBoard[idx] !== '') return;
+            tBoard[idx] = 'X'; cell.innerText = 'X'; cell.style.color = "var(--sys-primary)"; cell.style.textShadow = "0 0 10px var(--sys-primary)";
+            if(checkWinTTT('X')) { endTTT("You Win! 🎉", "var(--sys-primary)"); return; }
+            if(!tBoard.includes('')) { endTTT("Draw!", "gray"); return; }
+            tActive = false; document.getElementById('ttt-status').innerText = "AI is thinking...";
+            setTimeout(aiMoveTTT, 600);
         }
 
-        /* --- APP: NEON PONG --- */
+        function aiMoveTTT() {
+            let move = -1;
+            let empty = tBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+            if(empty.length === 0) return;
+
+            // EASY: 100% Random.
+            if(diffs['ttt'] === 0) {
+                move = empty[Math.floor(Math.random() * empty.length)];
+            } 
+            // NORMAL: 40% chance to play smart, 60% random.
+            else if(diffs['ttt'] === 1 && Math.random() > 0.4) {
+                move = empty[Math.floor(Math.random() * empty.length)];
+            }
+            // HARD (or Normal's 40%): Try to win, then try to block, then center, then random.
+            if(move === -1) {
+                // 1. Can AI win?
+                move = findWinningMoveTTT('O');
+                // 2. Can AI block player?
+                if(move === -1) move = findWinningMoveTTT('X');
+                // 3. Take center if empty
+                if(move === -1 && tBoard[4] === '') move = 4;
+                // 4. Random fallback
+                if(move === -1) move = empty[Math.floor(Math.random() * empty.length)];
+            }
+
+            tBoard[move] = 'O'; 
+            const cell = document.getElementById('ttt-board').children[move];
+            cell.innerText = 'O'; cell.style.color = "var(--sys-secondary)"; cell.style.textShadow = "0 0 10px var(--sys-secondary)";
+            
+            if(checkWinTTT('O')) { endTTT("AI Wins! 💀", "var(--sys-secondary)"); return; }
+            if(!tBoard.includes('')) { endTTT("Draw!", "gray"); return; }
+            tActive = true; document.getElementById('ttt-status').innerText = "Your Turn (X)";
+        }
+
+        function findWinningMoveTTT(player) {
+            for(let i=0; i<winPaths.length; i++) {
+                const [a,b,c] = winPaths[i];
+                if(tBoard[a]===player && tBoard[b]===player && tBoard[c]==='') return c;
+                if(tBoard[a]===player && tBoard[c]===player && tBoard[b]==='') return b;
+                if(tBoard[b]===player && tBoard[c]===player && tBoard[a]==='') return a;
+            }
+            return -1;
+        }
+        function checkWinTTT(player) { return winPaths.some(p => tBoard[p[0]] === player && tBoard[p[1]] === player && tBoard[p[2]] === player); }
+        function endTTT(msg, color) { tActive = false; document.getElementById('ttt-status').innerText = msg; document.getElementById('ttt-status').style.color = color; if(msg.includes('Win')) sfx('score'); else sfx('crash');}
+
+
+        /* --- 2. CONNECT 4 AI --- */
+        const c4Cols = 7, c4Rows = 6; let c4Board = [], c4Active = true;
+        function initC4() {
+            c4Board = Array(c4Rows).fill().map(() => Array(c4Cols).fill(0)); c4Active = true; 
+            document.getElementById('c4-status').innerText = "Drop a Chip"; document.getElementById('c4-status').style.color = "var(--sys-tertiary)";
+            const grid = document.getElementById('c4-board'); grid.innerHTML = '';
+            for(let r=0; r<c4Rows; r++) { for(let c=0; c<c4Cols; c++) { const cell = document.createElement('div'); cell.className = 'c4-cell'; cell.onclick = () => playerDropC4(c); cell.id = `c4-${r}-${c}`; grid.appendChild(cell); } }
+        }
+
+        function playerDropC4(col) {
+            if(!c4Active) return; let r = getLowestEmptyC4(col, c4Board); if(r === -1) return;
+            c4Board[r][col] = 1; document.getElementById(`c4-${r}-${col}`).classList.add('c4-red');
+            if(checkWinC4(1, c4Board)) { document.getElementById('c4-status').innerText = "You Win! 🎉"; c4Active = false; sfx('score'); return; }
+            c4Active = false; document.getElementById('c4-status').innerText = "AI is thinking..."; document.getElementById('c4-status').style.color = "var(--sys-secondary)";
+            setTimeout(aiDropC4, 600);
+        }
+
+        function aiDropC4() {
+            let validCols = []; for(let c=0; c<c4Cols; c++) if(getLowestEmptyC4(c, c4Board) !== -1) validCols.push(c);
+            if(validCols.length === 0) { document.getElementById('c4-status').innerText = "Draw!"; return; }
+            
+            let col = -1;
+
+            // EASY: Random
+            if(diffs['c4'] === 0) {
+                col = validCols[Math.floor(Math.random() * validCols.length)];
+            }
+            // NORMAL & HARD: Threat Detection
+            else {
+                // 1. Can AI Win right now?
+                for(let c of validCols) {
+                    let tempBoard = c4Board.map(row => [...row]);
+                    tempBoard[getLowestEmptyC4(c, tempBoard)][c] = 2;
+                    if(checkWinC4(2, tempBoard)) { col = c; break; }
+                }
+                // 2. Can Player Win next turn? (Block them)
+                if(col === -1 && diffs['c4'] > 0) {
+                    for(let c of validCols) {
+                        let tempBoard = c4Board.map(row => [...row]);
+                        tempBoard[getLowestEmptyC4(c, tempBoard)][c] = 1;
+                        if(checkWinC4(1, tempBoard)) { col = c; break; }
+                    }
+                }
+                // 3. Fallback to center bias if Hard, or random if Normal
+                if(col === -1) {
+                    if(diffs['c4'] === 2) {
+                        let centerBiased = [3,2,4,1,5,0,6].filter(c => validCols.includes(c));
+                        col = centerBiased[0];
+                    } else {
+                        col = validCols[Math.floor(Math.random() * validCols.length)];
+                    }
+                }
+            }
+
+            let r = getLowestEmptyC4(col, c4Board); c4Board[r][col] = 2; 
+            document.getElementById(`c4-${r}-${col}`).classList.add('c4-yellow');
+            if(checkWinC4(2, c4Board)) { document.getElementById('c4-status').innerText = "AI Wins! 💀"; c4Active = false; sfx('crash'); return; }
+            c4Active = true; document.getElementById('c4-status').innerText = "Drop a Chip"; document.getElementById('c4-status').style.color = "var(--sys-tertiary)";
+        }
+
+        function getLowestEmptyC4(col, board) { for(let r = c4Rows-1; r >= 0; r--) if(board[r][col] === 0) return r; return -1; }
+        function checkWinC4(p, board) {
+            for(let r=0; r<c4Rows; r++) { for(let c=0; c<c4Cols; c++) {
+                if(board[r][c] !== p) continue;
+                if(c + 3 < c4Cols && board[r][c+1]==p && board[r][c+2]==p && board[r][c+3]==p) return true;
+                if(r + 3 < c4Rows) {
+                    if(board[r+1][c]==p && board[r+2][c]==p && board[r+3][c]==p) return true;
+                    if(c + 3 < c4Cols && board[r+1][c+1]==p && board[r+2][c+2]==p && board[r+3][c+3]==p) return true;
+                    if(c - 3 >= 0 && board[r+1][c-1]==p && board[r+2][c-2]==p && board[r+3][c-3]==p) return true;
+                }
+            }} return false;
+        }
+
+
+        /* --- 3. NEON PONG AI --- */
         let pCanvas, pCtx, pongLoop, pActive = false;
-        let ball = { x: 150, y: 200, vx: 5, vy: 5, rad: 6 };
-        let pad1 = { x: 10, y: 150, w: 8, h: 60 }; 
-        let pad2 = { x: 282, y: 150, w: 8, h: 60 }; 
+        let ball = { x: 150, y: 175, vx: 5, vy: 5, rad: 6 };
+        let pad1 = { x: 10, y: 150, w: 8, h: 60 }; let pad2 = { x: 282, y: 150, w: 8, h: 60 }; 
         let score1 = 0, score2 = 0;
 
         function startPong() {
             pCanvas = document.getElementById('pong-canvas'); pCtx = pCanvas.getContext('2d');
             score1 = 0; score2 = 0; pActive = true; resetBall(); document.getElementById('pong-p1').innerText = 0; document.getElementById('pong-p2').innerText = 0;
-            
-            const movePad = (e) => {
-                const rect = pCanvas.getBoundingClientRect(); const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                pad1.y = Math.max(0, Math.min(pCanvas.height - pad1.h, y - pad1.h/2));
-            };
-            pCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); movePad(e);}, {passive:false});
-            pCanvas.addEventListener('mousemove', movePad);
+            const movePad = (e) => { const rect = pCanvas.getBoundingClientRect(); const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top; pad1.y = Math.max(0, Math.min(pCanvas.height - pad1.h, y - pad1.h/2)); };
+            pCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); movePad(e);}, {passive:false}); pCanvas.addEventListener('mousemove', movePad);
             pongLoop = requestAnimationFrame(updatePong);
         }
         function stopPong() { pActive = false; cancelAnimationFrame(pongLoop); }
-        function resetBall() { ball.x = 150; ball.y = 200; ball.vx = (Math.random()>0.5?4:-4); ball.vy = (Math.random()>0.5?4:-4); }
+        function resetBall() { ball.x = 150; ball.y = 175; ball.vx = (Math.random()>0.5?4:-4); ball.vy = (Math.random()>0.5?4:-4); }
         
         function updatePong() {
             if(!pActive) return;
             ball.x += ball.vx; ball.y += ball.vy;
             if(ball.y - ball.rad < 0 || ball.y + ball.rad > pCanvas.height) ball.vy *= -1;
             
-            // AI
+            // DIFFICULTY: AI Speed adjustments
+            // Easy = 2px, Normal = 4px, Hard = 7px (Unbeatable)
+            let aiSpeed = diffs['pong'] === 0 ? 2 : (diffs['pong'] === 1 ? 4 : 7);
+            
             let aiCenter = pad2.y + pad2.h/2;
-            if(aiCenter < ball.y - 10) pad2.y += 4; else if(aiCenter > ball.y + 10) pad2.y -= 4;
+            if(aiCenter < ball.y - 10) pad2.y += aiSpeed; 
+            else if(aiCenter > ball.y + 10) pad2.y -= aiSpeed;
             pad2.y = Math.max(0, Math.min(pCanvas.height - pad2.h, pad2.y));
 
-            let hitPaddle = (p) => {
-                if(ball.y > p.y && ball.y < p.y + p.h) {
-                    sfx('blip'); ball.vx *= -1.1; 
-                    ball.vy = (ball.y - (p.y + p.h/2)) * 0.2;
-                }
-            };
+            let hitPaddle = (p) => { if(ball.y > p.y && ball.y < p.y + p.h) { sfx('blip'); ball.vx *= -1.1; ball.vy = (ball.y - (p.y + p.h/2)) * 0.2; } };
             if(ball.x - ball.rad < pad1.x + pad1.w && ball.vx < 0) hitPaddle(pad1);
             if(ball.x + ball.rad > pad2.x && ball.vx > 0) hitPaddle(pad2);
 
@@ -542,80 +501,54 @@
             pongLoop = requestAnimationFrame(updatePong);
         }
 
-        /* --- APP: TIC-TAC-TOE vs AI --- */
-        let tBoard = [], tActive = true;
-        function initTTT() {
-            tBoard = ['','','','','','','','','']; tActive = true;
-            document.getElementById('ttt-status').innerText = "Your Turn (X)"; document.getElementById('ttt-status').style.color = "var(--sys-tertiary)";
-            const grid = document.getElementById('ttt-board'); grid.innerHTML = '';
-            for(let i=0; i<9; i++) { const cell = document.createElement('div'); cell.className = 'ttt-cell'; cell.onclick = () => moveTTT(i, cell); grid.appendChild(cell); }
-        }
-        function moveTTT(idx, cell) {
-            if(!tActive || tBoard[idx] !== '') return; sfx('blip');
-            tBoard[idx] = 'X'; cell.innerText = 'X'; cell.style.color = "var(--sys-primary)"; cell.style.textShadow = "0 0 10px var(--sys-primary)";
-            if(checkTTT('X')) { endTTT("You Win!", "var(--sys-primary)"); return; }
-            if(!tBoard.includes('')) { endTTT("Draw!", "gray"); return; }
-            tActive = false; document.getElementById('ttt-status').innerText = "AI thinking..."; setTimeout(aiTTT, 500);
-        }
-        function aiTTT() {
-            let empty = tBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null); if(empty.length === 0) return;
-            let move = empty[Math.floor(Math.random() * empty.length)]; tBoard[move] = 'O'; 
-            const cell = document.getElementById('ttt-board').children[move];
-            cell.innerText = 'O'; cell.style.color = "var(--sys-secondary)"; cell.style.textShadow = "0 0 10px var(--sys-secondary)";
-            if(checkTTT('O')) { endTTT("AI Wins!", "var(--sys-secondary)"); return; }
-            if(!tBoard.includes('')) { endTTT("Draw!", "gray"); return; }
-            tActive = true; document.getElementById('ttt-status').innerText = "Your Turn (X)";
-        }
-        function checkTTT(p) { const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; return w.some(a => tBoard[a[0]]===p && tBoard[a[1]]===p && tBoard[a[2]]===p); }
-        function endTTT(msg, color) { tActive = false; document.getElementById('ttt-status').innerText = msg; document.getElementById('ttt-status').style.color = color; if(msg.includes('Win')) sfx('score'); }
+        /* --- 4. RO-SHAM-BO AI (STATISTICAL TRACKING) --- */
+        let rScoreP = 0, rScoreAI = 0; 
+        const rEmo = { 'rock':'✊', 'paper':'✋', 'scissors':'✌️' };
+        
+        // Track player history to predict moves
+        let pHistory = { 'rock': 0, 'paper': 0, 'scissors': 0 };
 
-        /* --- APP: CONNECT 4 vs AI --- */
-        const c4C = 7, c4R = 6; let c4B = [], c4Act = true;
-        function initC4() {
-            c4B = Array(c4R).fill().map(() => Array(c4C).fill(0)); c4Act = true; 
-            document.getElementById('c4-status').innerText = "Drop a Chip"; document.getElementById('c4-status').style.color = "var(--sys-secondary)";
-            const grid = document.getElementById('c4-board'); grid.innerHTML = '';
-            for(let r=0; r<c4R; r++) { for(let c=0; c<c4C; c++) { const cell = document.createElement('div'); cell.className = 'c4-cell'; cell.onclick = () => moveC4(c); cell.id = `c4-${r}-${c}`; grid.appendChild(cell); } }
-        }
-        function moveC4(col) {
-            if(!c4Act) return; let r = getC4(col); if(r === -1) return; sfx('blip');
-            c4B[r][col] = 1; document.getElementById(`c4-${r}-${col}`).classList.add('c4-red');
-            if(chkC4(1)) { document.getElementById('c4-status').innerText = "You Win!"; c4Act = false; sfx('score'); return; }
-            c4Act = false; document.getElementById('c4-status').innerText = "AI thinking..."; document.getElementById('c4-status').style.color = "var(--sys-tertiary)"; setTimeout(aiC4, 500);
-        }
-        function aiC4() {
-            let valid = []; for(let c=0; c<c4C; c++) if(getC4(c) !== -1) valid.push(c);
-            if(valid.length === 0) { document.getElementById('c4-status').innerText = "Draw!"; return; }
-            let col = valid[Math.floor(Math.random() * valid.length)]; let r = getC4(col);
-            c4B[r][col] = 2; document.getElementById(`c4-${r}-${col}`).classList.add('c4-yellow');
-            if(chkC4(2)) { document.getElementById('c4-status').innerText = "AI Wins!"; c4Act = false; sfx('crash'); return; }
-            c4Act = true; document.getElementById('c4-status').innerText = "Drop a Chip"; document.getElementById('c4-status').style.color = "var(--sys-secondary)";
-        }
-        function getC4(col) { for(let r=c4R-1; r>=0; r--) if(c4B[r][col] === 0) return r; return -1; }
-        function chkC4(p) {
-            for(let r=0; r<c4R; r++) { for(let c=0; c<c4C; c++) {
-                if(c4B[r][c] !== p) continue;
-                if(c+3<c4C && c4B[r][c+1]==p && c4B[r][c+2]==p && c4B[r][c+3]==p) return true;
-                if(r+3<c4R) {
-                    if(c4B[r+1][c]==p && c4B[r+2][c]==p && c4B[r+3][c]==p) return true;
-                    if(c+3<c4C && c4B[r+1][c+1]==p && c4B[r+2][c+2]==p && c4B[r+3][c+3]==p) return true;
-                    if(c-3>=0 && c4B[r+1][c-1]==p && c4B[r+2][c-2]==p && c4B[r+3][c-3]==p) return true;
-                }
-            }} return false;
-        }
-
-        /* --- APP: ROCK PAPER SCISSORS vs AI --- */
-        let rScoreP = 0, rScoreAI = 0; const rEmo = { 'rock':'✊', 'paper':'✋', 'scissors':'✌️' };
         function playRPS(pCh) {
-            const ch = ['rock', 'paper', 'scissors']; let aiCh = ch[Math.floor(Math.random() * 3)];
+            const ch = ['rock', 'paper', 'scissors']; 
+            let aiCh = 'rock';
+
+            // EASY: Random
+            if(diffs['rps'] === 0) {
+                aiCh = ch[Math.floor(Math.random() * 3)];
+            }
+            // NORMAL: 50% Random, 50% Counter highest used
+            else if(diffs['rps'] === 1) {
+                if(Math.random() > 0.5) {
+                    let mostUsed = Object.keys(pHistory).reduce((a, b) => pHistory[a] > pHistory[b] ? a : b);
+                    if(pHistory[mostUsed] > 0) {
+                        aiCh = mostUsed === 'rock' ? 'paper' : (mostUsed === 'paper' ? 'scissors' : 'rock');
+                    } else { aiCh = ch[Math.floor(Math.random() * 3)]; }
+                } else { aiCh = ch[Math.floor(Math.random() * 3)]; }
+            }
+            // HARD: 90% Counter highest used
+            else {
+                if(Math.random() > 0.1) {
+                    let mostUsed = Object.keys(pHistory).reduce((a, b) => pHistory[a] > pHistory[b] ? a : b);
+                    if(pHistory[mostUsed] > 0) {
+                        aiCh = mostUsed === 'rock' ? 'paper' : (mostUsed === 'paper' ? 'scissors' : 'rock');
+                    } else { aiCh = ch[Math.floor(Math.random() * 3)]; }
+                } else { aiCh = ch[Math.floor(Math.random() * 3)]; }
+            }
+
+            // Record player move AFTER AI decides (no cheating by looking at current move)
+            pHistory[pCh]++;
+
             document.getElementById('rps-player-show').innerText = rEmo[pCh]; document.getElementById('rps-ai-show').innerText = rEmo[aiCh];
             let res = document.getElementById('rps-result');
+            
             if(pCh === aiCh) { res.innerText = "Draw!"; res.style.color = "gray"; sfx('blip');}
             else if((pCh==='rock' && aiCh==='scissors') || (pCh==='paper' && aiCh==='rock') || (pCh==='scissors' && aiCh==='paper')) {
                 res.innerText = "You Win!"; res.style.color = "var(--sys-primary)"; rScoreP++; sfx('score');
             } else { res.innerText = "AI Wins!"; res.style.color = "var(--sys-secondary)"; rScoreAI++; sfx('crash'); }
+            
             document.getElementById('rps-score-p').innerText = rScoreP; document.getElementById('rps-score-ai').innerText = rScoreAI;
         }
+
     </script>
 </body>
 </html>
